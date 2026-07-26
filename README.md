@@ -35,6 +35,40 @@ npx skills add vima-tech/pact -g
 
 推论：凡是「懂行的人自然知道」的东西，PACT 里**必须写出来**。
 
+## 它不是"参考流程"，是不许跳步的工序协议
+
+给 AI agent 一份流程说明，它会挑着做。所以 PACT 把流程固化成 **S0–S11 十二道工序**，
+每道有**进入条件 / 必须产出 / 可机检的退出条件**：
+
+```
+S0 定位摄入 → S1 访谈门 → [S2 熔合门] → [S3 存量评估]
+   → S4 写P → S5 写A → S6 写C → S7 写T
+   → S8 完备性门 → S9 冻结 → S10 施工LOOP → S11 收尾门
+```
+
+- **条件工序不适用时，必须显式标 `已跳过（理由）`**——静默略过 = 违反协议。
+- **工序状态落盘 `.pact/board.md`**，是断点续跑（会话中断 / 上下文压缩 / 换 agent 接手）的第一真相源。
+- **顺序由脚本机检**，不能出现"S8 完成而 S4 未开始"：
+
+```bash
+bash scripts/pact-status.sh
+```
+
+它查六项：骨架齐备（按进度动态要求）· 工序表完整 · 状态词合法且跳过带理由 ·
+顺序合法 · 冻结一致性（头部「已冻结」⇔ S9 完成）· 覆盖一致性（S10 完成 ⇒ 覆盖表无未验证项），
+并直接告诉 agent **下一道该做什么**。
+
+配套的 [`references/agent-protocol.md`](references/agent-protocol.md) 是**十二张工序卡**，
+每张三段：动作清单 · 退出判定 · **这道工序上 AI 最常见的偷懒模式**。例如：
+
+> **S5 常见偷懒**：理由写成「更现代、社区活跃、性能更好」——这三句对任何选型都成立，等于没写。
+> **S8 常见偷懒**：冷读 FAIL 了但觉得"问题不大"——它必须追问的每个问题都是真实的规格漏洞。
+> **S10 常见偷懒**：改宽断言让测试通过——这是停工线，命中即停，失败先查根因。
+
+还有**十条禁令**（禁止跳过工序 / 禁止在 S8 未过时写业务代码 / 禁止写没有 R-ID 的功能 /
+禁止自行裁定多来源分歧 / 禁止未跑机检就宣称完成 …），写在 `SKILL.md` 的执行协议里，
+优先级高于其余一切描述。
+
 ## 三个让它区别于「文档模板」的机制
 
 ### 1. 完备性是机检的，不是自觉的
@@ -94,20 +128,23 @@ lint 只能查结构。「只读这一份就能开工」靠另一道门验证：
 ## 目录
 
 ```
-SKILL.md                          skill 主体：5 模式 · 9 阶段 · 3 道闸门
-templates/
-  PACT.md                         30 锚点骨架，起手拷这个
-  interview.md                    访谈门：十二类补白清单
-  source-merge.md                 多来源差异裁定表
-  assessment.md                   存量代码八维评估
-  cold-read.md                    冷读门 prompt 与判定标准
-  board.md coverage.md changelog.md   执行态
-  CLAUDE.md                       项目 CLAUDE.md 模板（讲清与 PACT 的分工）
+SKILL.md                          skill 主体：执行协议 · 5 模式 · S0–S11 十二道工序
 references/
+  agent-protocol.md               ★ 十二张工序卡：动作清单 · 退出判定 · 常见偷懒模式
   authoring-guide.md              逐节「写到什么程度算够」+ 反例
   example-PACT.md                 通过全部机检的完整范例
+templates/
+  PACT.md                         30 锚点骨架，起手拷这个
+  board.md                        ★ 工序状态表 + 进度看板（断点续跑第一真相源）
+  interview.md                    S1 访谈门：十二类补白清单
+  source-merge.md                 S2 多来源差异裁定表
+  assessment.md                   S3 存量代码八维评估
+  cold-read.md                    S8 冷读门 prompt 与判定标准
+  coverage.md changelog.md        执行态
+  CLAUDE.md                       项目 CLAUDE.md 模板（讲清与 PACT 的分工）
 scripts/
-  pact-lint.sh                    完备性机检（零依赖）
+  pact-status.sh                  ★ 工序机检：骨架 + 状态 + 顺序 + 下一道（零依赖）
+  pact-lint.sh                    规格机检：四层完备性九项检查（零依赖）
   token-lint.sh                   有 UI 时：禁裸 hex/px/rgb（零依赖）
   visual-diff.mjs                 有 UI 时：截图 diff（需 playwright pixelmatch pngjs）
   computed-style.spec.ts          有 UI 时：computed 值 == token 值 的测试模板
@@ -119,7 +156,10 @@ scripts/
 <project>/
   PACT.md            # 真源：冻结的完备规格
   CLAUDE.md          # 惯例：怎么写代码
-  .pact/             # 过程与执行态（访谈/评估/冷读/看板/覆盖/变更记录）
+  .pact/
+    board.md         # ★ 工序状态表 —— 断点续跑先读这份
+    interview.md source-merge.md assessment.md      # S1/S2/S3 闸门记录
+    cold-read.md changelog.md coverage.md           # S8/S9/S10 执行态
 ```
 
 `PACT.md` 自足——不靠外链、不靠对话历史、不靠「你懂的」。
@@ -137,11 +177,26 @@ cd your-project
 
 ```bash
 SKILL_DIR=~/.claude/skills/pact
+
+# 规格机检
 bash $SKILL_DIR/scripts/pact-lint.sh $SKILL_DIR/references/example-PACT.md --level=feature
 # → PASS
 bash $SKILL_DIR/scripts/pact-lint.sh $SKILL_DIR/templates/PACT.md --level=full
 # → FAIL（空模板本来就不是合格规格，这是预期行为）
+
+# 工序机检（在你的项目里跑）
+bash $SKILL_DIR/scripts/pact-status.sh
+# → 列出 S0–S11 进度，并告诉你下一道该做什么
 ```
+
+**中断后怎么接着干**——不管是换了会话、上下文被压缩，还是换个 agent 接手：
+
+```bash
+cat .pact/board.md                        # 我在第几道工序
+bash $SKILL_DIR/scripts/pact-status.sh    # 机检 + 下一道是什么
+```
+
+不需要重新访谈，不需要重写已冻结的规格。
 
 ## 兼容性
 

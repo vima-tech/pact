@@ -42,19 +42,29 @@
 ## 4. 门禁（改完必须过）
 
 ```bash
-# ① 规格完备性（<SKILL_DIR> = pact skill 的安装目录）
-bash <SKILL_DIR>/scripts/pact-lint.sh PACT.md
+# <SKILL_DIR> = pact skill 的安装目录
+SKILL_DIR="$(ls -d ./.claude/skills/pact ~/.claude/skills/pact 2>/dev/null | head -1)"
 
-# ② 构建 / 测试
+# ① 工序状态（我在第几道 / 有没有跳步 / 下一道是什么）
+bash $SKILL_DIR/scripts/pact-status.sh
+
+# ② 规格完备性
+bash $SKILL_DIR/scripts/pact-lint.sh PACT.md
+
+# ③ 构建 / 测试
 <npm run build>
 <npm test>
 
-# ③ 有 UI 时追加
-bash <SKILL_DIR>/scripts/token-lint.sh <组件目录>     # 裸 hex/px 必须为 0
-node <SKILL_DIR>/scripts/visual-diff.mjs <URL> <基准图> --threshold=0.02
+# ④ 有 UI 时追加
+bash $SKILL_DIR/scripts/token-lint.sh <组件目录>     # 裸 hex/px 必须为 0
+node $SKILL_DIR/scripts/visual-diff.mjs <URL> <基准图> --threshold=0.02
 ```
 
-④ `.pact/coverage.md` 覆盖表全绿 ⑤ `PACT.md` 的 `T4` 交付前置逐条打勾。
+⑤ `.pact/coverage.md` 覆盖表全绿 ⑥ `PACT.md` 的 `T4` 交付前置逐条打勾。
+
+> **接手本项目的 AI 请注意**：本项目按 PACT 的 S0–S11 工序协议推进。
+> 开工前先 `cat .pact/board.md` 确认当前在第几道工序，**不要凭对话记忆判断进度**；
+> 每轮收工必须更新 `board.md`。工序卡见 `$SKILL_DIR/references/agent-protocol.md`。
 
 ## 5. 装 / 跑 / 测 / 构建
 
