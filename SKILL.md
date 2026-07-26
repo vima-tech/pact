@@ -7,8 +7,9 @@ description: >
   不追问背景、不猜测意图、不遗漏约束**。
   用于新建项目开局与大需求设计。执行方式不是"参考流程"，而是 **S0–S11 十二道工序**：
   每道有进入条件、必须产出、可机检的退出条件；不适用的工序必须显式标「已跳过（理由）」，
-  禁止静默略过；工序状态落盘 `.pact/board.md`，由 `pact-status.sh` 机检顺序合法性，
-  由 `pact-lint.sh` 机检规格完备性，由「零知识冷读门」验证"只读一份就能开工"。
+  禁止静默略过。三道机检兜底：`pact-status.sh` 查工序顺序、`pact-lint.sh` 查规格完备性、
+  `pact-trace.sh` 查**代码是否真按规格实现**（规格 ↔ 代码 `@pact` 标注 ↔ 覆盖表三方交叉比对，
+  抓虚报与野生功能）；再由「零知识冷读门」验证"只读一份就能开工"。
   内建工程纪律：R-ID 可追溯矩阵、批量审核门、多来源差异逐条裁定、存量代码八维评估、
   产物收敛落盘、结构与配置集中、交付即可被人类或 AI 接手。
   触发词：pact、PACT 文档、完备规格、新项目开局、大需求设计、写 PRD/SDD/SPEC、
@@ -75,8 +76,8 @@ S0 定位摄入 → S1 访谈门 → [S2 熔合门] → [S3 存量评估]
 | **S7** | 写 T 层 | 总是 | `PACT.md` `T1–T5` | 每个 R-ID 在 `T1` 有可执行验收；`T3` 停工线非空；`T5` 里程碑含「明确不含」 |
 | **S8** | 完备性门 | 总是 | `.pact/cold-read.md` | ① `pact-lint.sh` exit 0 ② 物料反扫无遗漏 ③ **冷读门 PASS** |
 | **S9** | 冻结 | 除 `--audit` | `PACT.md` 头部状态、`.pact/changelog.md` | 头部标 `状态: 已冻结 · <日期>`；changelog 已建 |
-| **S10** | 施工 LOOP | 除 `--audit` | 代码 + `.pact/coverage.md` | `coverage.md` 全部 R-ID `已验证`；`C3` 不变量检查通过 |
-| **S11** | 收尾自检门 | 除 `--audit` | 自检结果写入 `board.md` | `T4` 逐条打勾；末次冷读通过；`pact-status.sh` 全绿 |
+| **S10** | 施工 LOOP | 除 `--audit` | 代码（每段带 `@pact R###` 标注）+ `.pact/coverage.md` | `coverage.md` 全部 R-ID `已验证`；`C3` 不变量通过；**`pact-trace.sh --require-complete` 通过** |
+| **S11** | 收尾自检门 | 除 `--audit` | 自检结果写入 `board.md` | `T4` 逐条打勾；末次冷读通过；**三道机检全绿** |
 
 **条件工序（S2/S3）不适用时，必须在 `board.md` 标 `已跳过（理由）`。静默略过 = 违反协议。**
 
@@ -109,16 +110,25 @@ git status                  # ④ 有无未收尾的改动
 
 读完这四样再决定做什么。**不要重新访谈、不要重写已冻结的规格、不要重复已完成的工序。**
 
-## 协议四：两道机检（自称完成不算数）
+## 协议四：三道机检（自称完成不算数）
 
 ```bash
 SKILL_DIR="$(ls -d ./.claude/skills/pact ~/.claude/skills/pact 2>/dev/null | head -1)"
 
-bash $SKILL_DIR/scripts/pact-status.sh            # 工序：骨架 + 状态合法性 + 顺序 + 下一道
-bash $SKILL_DIR/scripts/pact-lint.sh PACT.md      # 规格：四层完备性九项检查
+bash $SKILL_DIR/scripts/pact-status.sh        # 工序：骨架 + 状态合法性 + 顺序 + 下一道
+bash $SKILL_DIR/scripts/pact-lint.sh PACT.md  # 规格：四层完备性九项检查
+bash $SKILL_DIR/scripts/pact-trace.sh         # 落地：规格 ↔ 代码 ↔ 覆盖表 三方交叉比对
 ```
 
-**在 S8、S11，以及任何你打算说「完成了」的时候，这两个脚本都必须真跑并贴结果。**
+三道各管一件事，缺一不可：
+
+| 脚本 | 回答的问题 | 抓什么 |
+|---|---|---|
+| `pact-status.sh` | **工序走到哪了、有没有跳步** | 跳步、静默略过、冻结状态不一致 |
+| `pact-lint.sh` | **PACT 写够了没有** | 锚点缺失、占位符、R-ID 无验收、决策无「已否决」 |
+| `pact-trace.sh` | **代码真按 PACT 做了没有** | **虚报**（覆盖表说已验证但代码里没有）、**野生功能**（代码有 R-ID 但规格里没有）、漏登记、未实现 |
+
+**在 S8、S10 每轮、S11，以及任何你打算说「完成了」的时候，这三个脚本都必须真跑并贴结果。**
 没跑过就宣称完成 = 违反协议。
 
 ## 协议五：十条禁令
@@ -126,7 +136,9 @@ bash $SKILL_DIR/scripts/pact-lint.sh PACT.md      # 规格：四层完备性九�
 1. **禁止跳过工序。** 不适用的工序要在 `board.md` 标 `已跳过（理由）`，不得静默略过。
 2. **禁止 `board.md` 未更新就进入下一道工序。**
 3. **禁止在 S8 未 PASS 时写业务代码。** 规格没冻结就施工 = 带病开工。
-4. **禁止写没有 R-ID 的功能。** 用户中途加需求也不例外——必走 **S10-CR 五步**
+4. **禁止写没有 R-ID 的功能，也禁止写了不标注。** 每段业务代码必须带 `@pact R###` 注释
+   （见 S10 标注约定），否则 `pact-trace.sh` 无法反查，覆盖表就成了一句空话。
+   用户中途加需求也不例外——必走 **S10-CR 五步**
    （回 `P5` → 补 `T1` → 改 `C` 层 → 记 changelog → 判断是否重跑冷读门）。
 5. **禁止自行裁定多来源分歧。** 矛盾类必须 `AskUserQuestion` 让用户定，不得"择优采用"。
 6. **禁止把状态只留在对话里。** 一律落盘到 `PACT.md` / `.pact/`。
@@ -207,6 +219,7 @@ bash $SKILL_DIR/scripts/pact-lint.sh PACT.md      # 规格：四层完备性九�
 | `templates/{board,interview,source-merge,assessment,cold-read,coverage,changelog,CLAUDE}.md` | 各工序模板 |
 | `scripts/pact-status.sh` | **工序机检**：骨架齐备 + 状态合法 + 顺序合法 + 告诉你下一道 |
 | `scripts/pact-lint.sh` | **规格机检**：四层完备性九项检查。零依赖 |
+| `scripts/pact-trace.sh` | **落地机检**：规格 ↔ 代码 `@pact` 标注 ↔ 覆盖表三方交叉比对，抓虚报与野生功能。零依赖 |
 | `scripts/token-lint.sh` | 有 UI 时：组件里禁止裸 hex/px/rgb。零依赖 |
 | `scripts/visual-diff.mjs` | 有 UI 时：截图对基准图 pixelmatch。需 `playwright pixelmatch pngjs` |
 | `scripts/computed-style.spec.ts` | 有 UI 时：断言 computed 值 == token 值的测试模板 |
@@ -463,8 +476,18 @@ bash <SKILL_DIR>/scripts/pact-lint.sh PACT.md --level=feature   # 大需求
 **P0 全清前不碰打磨项。**
 
 每轮：
-1. **实现**：代码落到 `A2` 约定的位置；配置进 `C7` 的集中配置层，业务代码里零散落魔法值；
-   每段标注覆盖的 `R-ID`。
+1. **实现**：代码落到 `A2` 约定的位置；配置进 `C7` 的集中配置层，业务代码里零散落魔法值。
+   **每段业务代码必须带 R-ID 标注**，格式固定（任何语言的注释里都能写）：
+
+   ```
+   // @pact R001              单个
+   // @pact R001,R002         一段代码覆盖多个
+   # @pact R014               Python / Shell
+   <!-- @pact R021 -->        模板 / HTML
+   ```
+
+   这不是装饰——`pact-trace.sh` 靠它反查「R001 实现在哪」，
+   并识别**虚报**（覆盖表说做完了但代码里没有）与**野生功能**（代码有但规格里没有）。
 2. **验收**（读 PASS/FAIL，不靠肉眼）：
    - 跑 `T1` 为该簇 R-ID 指定的验收方式。
    - 有 UI 时追加三道：
@@ -476,6 +499,8 @@ bash <SKILL_DIR>/scripts/pact-lint.sh PACT.md --level=feature   # 大需求
      `visual-diff.mjs` 需 `playwright pixelmatch pngjs`；项目若已有自己的视觉回归方案，
      直接用你自己的，别为跑这个脚本引入新依赖。
    - 核对 `C3` 中与本单元相关的不变量仍然成立。
+   - **跑可追溯性机检**：`bash <SKILL_DIR>/scripts/pact-trace.sh`
+     —— 本轮实现的 R-ID 必须出现在代码标注里，且无虚报、无野生 R-ID。
 3. **判定**：任一 FAIL → 同一单元继续修，**不前进**；全过 → `.pact/coverage.md` 标该簇 `已验证`。
 4. **停工线检查**：对照 `T3`，命中任一条 → **立即停**，`needs input:` 说明命中了哪条。
 5. 每轮末更新 `.pact/board.md`；PACT 有变动同步 changelog。
@@ -507,7 +532,8 @@ bash <SKILL_DIR>/scripts/pact-lint.sh PACT.md --level=feature   # 大需求
 变更若与 `P6` 非目标或 `P7` 硬约束冲突 → 停下来 `AskUserQuestion`，不要自行放宽约束。
 
 **退出条件**：`coverage.md` 全部 R-ID `已验证` · `C3` 不变量检查通过 · 无未处理的停工线命中 ·
-本轮所有需求变更都已走完 S10-CR 五步。
+本轮所有需求变更都已走完 S10-CR 五步 ·
+`pact-trace.sh --require-complete` 通过（P5 每个 R-ID 都能在代码里反查到，无虚报、无野生）。
 
 ---
 
@@ -519,7 +545,13 @@ bash <SKILL_DIR>/scripts/pact-lint.sh PACT.md --level=feature   # 大需求
 4. `T4` 交付前置清单逐条打勾。
 5. **规格与实现一致性**：PACT 里的契约（表结构/接口/错误码/配置）与代码实测一致；
    不一致 → 要么改代码，要么改 PACT 并记 changelog，**不许放着**。
-6. **两道机检全绿**：`pact-status.sh` + `pact-lint.sh`（协议四）。
+6. **三道机检全绿**（协议四）：
+   ```bash
+   bash <SKILL_DIR>/scripts/pact-status.sh
+   bash <SKILL_DIR>/scripts/pact-lint.sh PACT.md --level=<full|feature>
+   bash <SKILL_DIR>/scripts/pact-trace.sh --require-complete
+   ```
+   `--require-complete` 会把「还有 R-ID 未实现」从提示升级为 FAIL —— 收尾时必须加。
 7. **可接手性自检**：`A2` 与实际目录一致 · 配置集中且有 `.env.example` ·
    新人照 README 能一把跑通 · 无孤儿/临时/死文件 · 无 `TODO` 占位 ·
    **根目录仅入口文件 + 业务目录**。

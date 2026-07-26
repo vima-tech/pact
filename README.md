@@ -70,6 +70,37 @@ bash scripts/pact-status.sh
 禁止自行裁定多来源分歧 / 禁止未跑机检就宣称完成 …），写在 `SKILL.md` 的执行协议里，
 优先级高于其余一切描述。
 
+## 落地侧同样是机检的：代码必须能反查回规格
+
+写规格严格、落地靠自觉，等于没有落地。所以每段业务代码必须带 R-ID 标注：
+
+```js
+// @pact R001            单个
+// @pact R001,R002       一段代码覆盖多个
+# @pact R014             Python / Shell
+<!-- @pact R021 -->      模板 / HTML
+```
+
+然后 `pact-trace.sh` 做**三方交叉比对**——规格 `P5` 声称要做的、代码里实际标注的、
+`coverage.md` 里 AI 声称完成的：
+
+```bash
+bash scripts/pact-trace.sh                     # 施工中
+bash scripts/pact-trace.sh --require-complete  # 收尾时
+```
+
+它抓四类问题，头两类直接 FAIL：
+
+| 问题 | 含义 |
+|---|---|
+| **虚报** | `coverage.md` 标了「已验证」，代码里却找不到该 R-ID —— AI 自说自话做完了 |
+| **野生功能** | 代码标了 `P5` 里不存在的 R-ID —— 写了没进规格的东西，或笔误 |
+| 漏登记 | 代码已实现，覆盖表没记 |
+| 未实现 | `P5` 有、代码无（施工中正常，`--require-complete` 下升为 FAIL） |
+
+顺带输出 **R-ID → 代码位置** 的反查表和实现进度百分比。
+这条是"严格按 PACT 落地"的底线：**规格、代码、覆盖表三者必须对得上**。
+
 ## 三个让它区别于「文档模板」的机制
 
 ### 1. 完备性是机检的，不是自觉的
@@ -145,7 +176,8 @@ templates/
   CLAUDE.md                       项目 CLAUDE.md 模板（讲清与 PACT 的分工）
 scripts/
   pact-status.sh                  ★ 工序机检：骨架 + 状态 + 顺序 + 下一道（零依赖）
-  pact-lint.sh                    规格机检：四层完备性九项检查（零依赖）
+  pact-lint.sh                    ★ 规格机检：四层完备性九项检查（零依赖）
+  pact-trace.sh                   ★ 落地机检：规格↔代码↔覆盖表三方比对，抓虚报与野生功能（零依赖）
   token-lint.sh                   有 UI 时：禁裸 hex/px/rgb（零依赖）
   visual-diff.mjs                 有 UI 时：截图 diff（需 playwright pixelmatch pngjs）
   computed-style.spec.ts          有 UI 时：computed 值 == token 值 的测试模板
@@ -188,6 +220,10 @@ bash $SKILL_DIR/scripts/pact-lint.sh $SKILL_DIR/templates/PACT.md --level=full
 # 工序机检（在你的项目里跑）
 bash $SKILL_DIR/scripts/pact-status.sh
 # → 列出 S0–S11 进度，并告诉你下一道该做什么
+
+# 落地机检（施工开始后在你的项目里跑）
+bash $SKILL_DIR/scripts/pact-trace.sh
+# → R-ID 实现进度 + 虚报/野生功能告警 + R-ID→代码位置反查表
 ```
 
 **中断后怎么接着干**——不管是换了会话、上下文被压缩，还是换个 agent 接手：

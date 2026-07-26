@@ -5,10 +5,14 @@
 > 审核 = 读这张表的状态，**不靠肉眼比对代码与文档**。
 > 状态：`未实现` / `已实现(待验)` / `已验证` / `偏离`。
 > 每个 R-ID 至少一个可执行检查（与 `PACT.md` 的 `T1` 一一对应）。
+>
+> **本表不是自说自话**：标 `已验证` 的 R-ID，代码里必须能找到对应的 `@pact R###` 标注，
+> 否则 `pact-trace.sh` 会判为**虚报**并 FAIL。实现位置一列填的就是标注所在处。
+> 机检：`bash <SKILL_DIR>/scripts/pact-trace.sh`（收尾加 `--require-complete`）
 
 | R-ID | 实现位置 | 验收方式（同 T1） | 最近一次结果 | 状态 |
 |---|---|---|---|---|
-| R001 | `src/features/auth/login.ts:42` | 单测 `auth::test_login_ok` | PASS 2026-07-26 | 已验证 ✅ |
+| R001 | `src/features/auth/login.ts:42`（`// @pact R001`） | 单测 `auth::test_login_ok` | PASS 2026-07-26 | 已验证 ✅ |
 | R002 | `server/query/scope.ts:18` | e2e 四层级 | 3/4 PASS | 已实现(待验) |
 | R003 | — | — | — | 未实现 ❌ |
 
@@ -26,6 +30,7 @@
 | P1 登录 | `.pact/baseline/P1-login.png` | 1.3% | 2% | ✅ |
 
 ## 收尾自检
+- [ ] `pact-trace.sh --require-complete` 通过（无虚报、无野生 R-ID、无未实现）
 - [ ] PACT 反向重扫：未覆盖 / 部分覆盖 / 偏离 = ___
 - [ ] 所有 R-ID 状态 = 已验证
 - [ ] `C3` 全部不变量检查通过

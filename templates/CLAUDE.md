@@ -27,8 +27,16 @@
 
 ## 3. 开发约定（硬性）
 
-- **可追溯**：每段业务代码标注它覆盖的 `R-ID`。**没有 R-ID 的功能不写**——
-  要加功能先回 `PACT.md` 的 `P5` 加条目、在 `T1` 加验收、记 `.pact/changelog.md`。
+- **可追溯**：每段业务代码必须带 R-ID 标注，格式固定：
+
+  ```
+  // @pact R001            单个            # @pact R014        Python/Shell
+  // @pact R001,R002       多个            <!-- @pact R021 --> 模板/HTML
+  ```
+
+  `pact-trace.sh` 靠它反查「R001 实现在哪」，并抓虚报与野生功能。
+  **没有 R-ID 的功能不写**——要加功能先回 `PACT.md` 的 `P5` 加条目、
+  在 `T1` 加验收、记 `.pact/changelog.md`（走 S10-CR 五步）。
 - **落位**：代码放到 `PACT.md` 的 `A2` 约定的目录；新增目录同步更新 `A2`。
 - **配置集中**：配置只从 `PACT.md` 的 `C7` 声明的单一来源读；业务代码里**零硬编码魔法值**。
   敏感值不进仓库，`.env.example` 必须覆盖全部必需变量。
@@ -51,16 +59,19 @@ bash $SKILL_DIR/scripts/pact-status.sh
 # ② 规格完备性
 bash $SKILL_DIR/scripts/pact-lint.sh PACT.md
 
-# ③ 构建 / 测试
+# ③ 落地可追溯性（规格 ↔ 代码 ↔ 覆盖表）
+bash $SKILL_DIR/scripts/pact-trace.sh
+
+# ④ 构建 / 测试
 <npm run build>
 <npm test>
 
-# ④ 有 UI 时追加
+# ⑤ 有 UI 时追加
 bash $SKILL_DIR/scripts/token-lint.sh <组件目录>     # 裸 hex/px 必须为 0
 node $SKILL_DIR/scripts/visual-diff.mjs <URL> <基准图> --threshold=0.02
 ```
 
-⑤ `.pact/coverage.md` 覆盖表全绿 ⑥ `PACT.md` 的 `T4` 交付前置逐条打勾。
+⑥ `.pact/coverage.md` 覆盖表全绿 ⑦ `PACT.md` 的 `T4` 交付前置逐条打勾。
 
 > **接手本项目的 AI 请注意**：本项目按 PACT 的 S0–S11 工序协议推进。
 > 开工前先 `cat .pact/board.md` 确认当前在第几道工序，**不要凭对话记忆判断进度**；
