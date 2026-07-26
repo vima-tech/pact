@@ -55,7 +55,8 @@ bash scripts/pact-status.sh
 ```
 
 它查六项：骨架齐备（按进度动态要求）· 工序表完整 · 状态词合法且跳过带理由 ·
-顺序合法 · 冻结一致性（头部「已冻结」⇔ S9 完成）· 覆盖一致性（S10 完成 ⇒ 覆盖表无未验证项），
+顺序合法 · 冻结一致性（S9 完成 ⇔ 头部「已冻结」；S9 因 --build/--audit 跳过时不强检）·
+覆盖一致性（S10 完成 ⇒ 覆盖表无未验证项），
 并直接告诉 agent **下一道该做什么**。
 
 配套的 [`references/agent-protocol.md`](references/agent-protocol.md) 是**十二张工序卡**，
@@ -203,6 +204,10 @@ bash $SKILL_DIR/scripts/pact-status.sh    # 机检 + 下一道是什么
 `SKILL.md` 遵循 [agent skills](https://github.com/vercel-labs/skills) 规范，
 可安装到 Claude Code、Cursor、Codex、Copilot 等支持 skills 的 agent。
 `pact-lint.sh` 与 `token-lint.sh` 只依赖 bash + 常见 coreutils。
+
+## 更新记录
+
+见 [CHANGELOG.md](CHANGELOG.md)。升级：`npx skills update pact`
 
 ## License
 

@@ -25,7 +25,7 @@ for a in "$@"; do
   case "$a" in
     --level=*) LEVEL="${a#--level=}" ;;
     --quiet)   QUIET=1 ;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
     -*) echo "未知参数: $a" >&2; exit 2 ;;
     *)  FILE="$a" ;;
   esac
