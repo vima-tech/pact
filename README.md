@@ -24,6 +24,14 @@ npx skills add vima-tech/pact -g
 
 装完在支持 skills 的 agent 里直接说 `/pact` 或「用 PACT 给这个项目写规格」即可触发。
 
+**先看用法**（不会执行任何工序，只打印一份速览）：
+
+```
+/pact --help
+```
+
+终端里也能看：`bash ~/.claude/skills/pact/scripts/pact-help.sh`
+
 ## 为什么不是又一个 PRD 模板
 
 | 体裁 | 它回答 | PACT 的不同 |
@@ -162,6 +170,7 @@ lint 只能查结构。「只读这一份就能开工」靠另一道门验证：
 ```
 SKILL.md                          skill 主体：执行协议 · 5 模式 · S0–S11 十二道工序
 references/
+  help.md                         人类向使用速览（/pact --help 输出这份）
   agent-protocol.md               ★ 十二张工序卡：动作清单 · 退出判定 · 常见偷懒模式
   authoring-guide.md              逐节「写到什么程度算够」+ 反例
   example-PACT.md                 通过全部机检的完整范例
@@ -175,6 +184,7 @@ templates/
   coverage.md changelog.md        执行态
   CLAUDE.md                       项目 CLAUDE.md 模板（讲清与 PACT 的分工）
 scripts/
+  pact-help.sh                    打印使用速览（--help 输出 references/help.md）
   pact-status.sh                  ★ 工序机检：骨架 + 状态 + 顺序 + 下一道（零依赖）
   pact-lint.sh                    ★ 规格机检：四层完备性九项检查（零依赖）
   pact-trace.sh                   ★ 落地机检：规格↔代码↔覆盖表三方比对，抓虚报与野生功能（零依赖）

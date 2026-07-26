@@ -14,7 +14,7 @@ description: >
   产物收敛落盘、结构与配置集中、交付即可被人类或 AI 接手。
   触发词：pact、PACT 文档、完备规格、新项目开局、大需求设计、写 PRD/SDD/SPEC、
   技术方案设计、规格评审、冷读检查、需求冻结、按工序施工。
-argument-hint: "[<简报文本 | 既有文档路径...>] [--new|--feature|--merge|--build|--audit] [--level=full|feature] [--review]"
+argument-hint: "[--help] [<简报文本 | 既有文档路径...>] [--new|--feature|--merge|--build|--audit] [--level=full|feature] [--review]"
 ---
 
 # PACT — 单文件完备规格 + 强制工序协议
@@ -55,6 +55,19 @@ argument-hint: "[<简报文本 | 既有文档路径...>] [--new|--feature|--merg
 ---
 
 # ★ 执行协议（硬性 · 本节优先级高于下文一切描述）
+
+## 协议零：`--help` 短路（先于其余一切判断）
+
+**若 `$ARGUMENTS` 含 `--help` / `-h` / `帮助` / `怎么用`，只做一件事：把使用速览原样输出给用户，
+然后停止。** 不判模式、不建 `.pact/`、不碰 `PACT.md`、不进入任何工序。
+
+```bash
+SKILL_DIR="$(ls -d ./.claude/skills/pact ~/.claude/skills/pact 2>/dev/null | head -1)"
+bash $SKILL_DIR/scripts/pact-help.sh
+```
+
+（脚本不可用时，直接读 `<SKILL_DIR>/references/help.md` 并原样呈现。）
+输出后可以补一句「想开始就说 `/pact <你的需求>`」，**但不要自作主张替用户开工**。
 
 ## 协议一：十二道工序，逐道收敛
 
@@ -173,6 +186,7 @@ bash $SKILL_DIR/scripts/pact-trace.sh         # 落地：规格 ↔ 代码 ↔ �
 | `--merge` | 给了既有 PRD/SDD/原型/散落文档 | **熔合**：多来源差异逐条裁定 → 合成单份 PACT |
 | `--build` | 已有冻结的 `PACT.md` | 跳过写作，直接进 S10 施工闭环 |
 | `--audit` | 已有 `PACT.md` | 只体检：S8 三道门，出报告不改实现 |
+| `--help` | 任何时候 | **只打印使用速览就停**（协议零），不执行任何工序 |
 
 `--review`：每道闸门后暂停等确认（默认不停，但产物始终落盘，可随时打断）。
 `--level=full|feature`：完备度档位。`full`=新建项目（30 个锚点全填）；
@@ -213,6 +227,7 @@ bash $SKILL_DIR/scripts/pact-trace.sh         # 落地：规格 ↔ 代码 ↔ �
 | 路径 | 用途 |
 |---|---|
 | `references/agent-protocol.md` | **★ 十二张工序卡**：每道工序的动作清单、判定标准、常见偷懒模式。**每道工序开工前读对应那张卡** |
+| `references/help.md` | **人类向使用速览**。`--help` 时原样输出这份 |
 | `references/authoring-guide.md` | 逐节「写到什么程度算够」+ 反例。写不下去或不确定精度时读它 |
 | `references/example-PACT.md` | 通过全部机检的 feature 级完整范例 |
 | `templates/PACT.md` | 30 锚点骨架，起手就拷这个 |
@@ -220,6 +235,7 @@ bash $SKILL_DIR/scripts/pact-trace.sh         # 落地：规格 ↔ 代码 ↔ �
 | `scripts/pact-status.sh` | **工序机检**：骨架齐备 + 状态合法 + 顺序合法 + 告诉你下一道 |
 | `scripts/pact-lint.sh` | **规格机检**：四层完备性九项检查。零依赖 |
 | `scripts/pact-trace.sh` | **落地机检**：规格 ↔ 代码 `@pact` 标注 ↔ 覆盖表三方交叉比对，抓虚报与野生功能。零依赖 |
+| `scripts/pact-help.sh` | 打印使用速览（`--help` 用；人类也可在终端直接跑） |
 | `scripts/token-lint.sh` | 有 UI 时：组件里禁止裸 hex/px/rgb。零依赖 |
 | `scripts/visual-diff.mjs` | 有 UI 时：截图对基准图 pixelmatch。需 `playwright pixelmatch pngjs` |
 | `scripts/computed-style.spec.ts` | 有 UI 时：断言 computed 值 == token 值的测试模板 |
