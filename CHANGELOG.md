@@ -4,6 +4,24 @@
 >
 > 升级：`npx skills update pact`（或重新 `npx skills add vima-tech/pact -g`）
 
+## 2026-08-01 · 估算工具补 ②类风险系数 + 子项 T1 识别 + 补齐工具入口
+
+pact-estimate.sh 上线后暴露三处与方法脱节：
+
+- **②类未知业务约束未建模**。方法 §一 反复强调「②类不可压缩、是失控主因」，
+  工具却只按 T1/T2/T3 均值算，把重尾风险平均掉了。现加 `risk2` 系数
+  （阶段3 × (1+risk₂)），显式一项：0=摸清 / 0.15 中 / 0.3 高（陌生行业严监管，
+  判据是 source-merge 里「实测有文档无」的条目数）。**别藏进费率**——
+  显式才能让甲方看到「这段时间是为没写下来的规矩留的」，也才能按实际②类事件数校准。
+- **子项验收不识别**。原子化把 R131 拆成 T1 的 R131.1..9 九行后，工具按精确
+  `R131` 匹配失败、误判「缺 T1 验收」拒绝出数。`pact-parse.mjs` 现识别
+  `R###.x` 子项归到父项。回归信号：pact-book.sh --check 字节级 PASS。
+- **工具入口缺失**。SKILL.md 协议七之外，README 文件树 / help.md 八点四 /
+  pact-help.sh / agent-protocol S7 工序卡都没提 pact-estimate.sh，等于做了没接。
+  已全部补齐。新增 templates/rate-card.json（含 risk2 与判据注释）。
+
+effort-estimation.md §四点五 补 risk₂ 判据表与「别藏进费率」的告诫。
+
 ## 2026-08-01 · 估算工具化 `pact-estimate.sh`
 
 方法有了但还得手算，等于把「可复核的算术」又交回给人。本次把 §四点五 做成工具。

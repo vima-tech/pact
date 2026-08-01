@@ -52,6 +52,10 @@ const DEFAULT_CARD = {
   blockBuffer: 2.0,          // 阻塞缓冲（六类阻塞源全存在则取上限 2）
   dayRate: 800,              // 元/人天
   fanInT3: 50, fanInT2: 10,  // 分层阈值
+  // ②类未知业务约束风险系数（effort-estimation.md §一）：现场才发现的隐藏规矩，不可压缩。
+  // 判据：.pact/source-merge.md 里「实测有、文档无」的条目数越多，本行业没写下来的规矩越密。
+  // 阶段3 × (1 + risk2)。0 = 已完全摸清（罕见）；0.15 中；0.3 高（陌生行业/严监管）。
+  risk2: 0.15,
   // 分层正则（可覆盖）。组名规则只对「整组确实都难」的分组用；权限与地基逐条判更准。
   groupT3: '集成|交换|网闸|不变量|账务口径',
   descT3: '唯一入口|幂等|审计链|hash\\s*链|账实对账|数据范围裁定|离线',
@@ -125,7 +129,9 @@ for (const t of tier.values()) N[t]++
 
 // ── 测算 ────────────────────────────────────────────────────────────────────
 const days = { T1: N.T1 / rates.T1, T2: N.T2 / rates.T2, T3: N.T3 / rates.T3 }
-const stage3 = days.T1 + days.T2 + days.T3
+const stage3base = days.T1 + days.T2 + days.T3
+const risk2 = card.risk2 ?? 0.15
+const stage3 = stage3base * (1 + risk2)
 const dev = card.stage1.map((s1, i) => (s1 + card.stage2[i] + stage3) * (1 + card.changeBudget))
 const deliver = dev.map(d => d * card.blockBuffer)
 const cost = dev.map(d => d * card.dayRate)
@@ -144,7 +150,7 @@ const base = concurrency[0]?.deliver || deliver
 const fmt = (a, d = 0) => `${a[0].toFixed(d)}–${a[1].toFixed(d)}`
 const result = {
   file: FILE, card: CARD, rates, counts: N, total: reqs.length,
-  stage3, dev, deliver, cost, months: deliver.map(x => x / M),
+  stage3base, risk2, stage3, dev, deliver, cost, months: deliver.map(x => x / M),
   tierDays: days,
   tierShare: Object.fromEntries(Object.entries(days).map(([k, v]) => [k, v / stage3])),
   foundation: foundation.map(r => r.id),
@@ -165,7 +171,8 @@ for (const k of ['T1', 'T2', 'T3']) {
   const bar = '█'.repeat(Math.round(result.tierShare[k] * 30))
   say(`  ${k} ${String(N[k]).padStart(9)} ${days[k].toFixed(1).padStart(8)} 天 ${(result.tierShare[k] * 100).toFixed(1).padStart(7)}%  ${bar}`)
 }
-say(`\n  阶段3 ${stage3.toFixed(1)} 天 ｜ 开发工作量 ${fmt(dev, 1)} 人天 ｜ 交付周期 ${fmt(deliver)} 天 ≈ ${fmt(deliver.map(x => x / M), 1)} 个月`)
+say(`\n  阶段3 ${stage3base.toFixed(1)} 天 × (1+${risk2} ②类风险) = ${stage3.toFixed(1)} 天`)
+say(`  开发工作量 ${fmt(dev, 1)} 人天 ｜ 交付周期 ${fmt(deliver)} 天 ≈ ${fmt(deliver.map(x => x / M), 1)} 个月`)
 say(`  开发时间成本 ${fmt(cost.map(c => c / 10000), 1)} 万元（${card.dayRate} 元/人天，不含实施硬件运维）`)
 say('')
 say('  并发（阻塞项不随人数减少）')
@@ -202,7 +209,9 @@ const md = [
   `| 项 | 值 |`, `|---|---|`,
   `| 阶段1 需求→PACT→原型 | ${card.stage1.join('–')} 天（常数） |`,
   `| 阶段2 骨架生成 | ${card.stage2.join('–')} 天（常数） |`,
-  `| 阶段3 逐条落地 | **${stage3.toFixed(1)} 天** |`,
+  `| 阶段3（分层）| ${stage3base.toFixed(1)} 天 |`,
+  `| ②类未知业务约束风险 | ×(1+${risk2}) |`,
+  `| 阶段3（含风险）| **${stage3.toFixed(1)} 天** |`,
   `| 变更预算 | +${(card.changeBudget * 100).toFixed(0)}% |`,
   `| **开发工作量** | **${fmt(dev, 1)} 人天** |`,
   `| 阻塞缓冲 | ×${card.blockBuffer} |`,

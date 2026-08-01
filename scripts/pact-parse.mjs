@@ -94,9 +94,13 @@ const reqs = new Map()                                // R### -> {...}
   const ch = chById['T1']
   if (ch) for (const line of ch.body.split('\n')) {
     const c = cells(line); if (!c || c.length < 3) continue
-    const id = plain(c[0]).replace(/\s*★.*$/, '').trim()
+    let id = plain(c[0]).replace(/\s*★.*$/, '').trim()
+    // 子项验收 R131.3 / R131.9 入库汇总 → 归到父 R131（原子化拆分后 T1 逐子项写，父项即被覆盖）
+    const sub = id.match(/^(R\d{3})[.\uff0e]/)
+    if (sub) id = sub[1]
     if (!/^R\d{3}$/.test(id)) continue
     const r = reqs.get(id); if (!r) continue
+    if (r.t1method) continue  // 已被首个子项覆盖，不覆写
     r.t1method = c[1] || ''; r.t1criteria = c[2] || ''; r.t1checker = c[3] || ''
     if (/★/.test(c[0])) r.star = true
   }

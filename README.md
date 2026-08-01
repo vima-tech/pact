@@ -194,6 +194,8 @@ scripts/
   pact-lint.sh                    ★ 规格机检：四层完备性九项检查（零依赖）
   pact-trace.sh                   ★ 落地机检：规格↔代码↔覆盖表三方比对，抓虚报与野生功能（零依赖）
   pact-book.sh                    ★ 生成知识库：md 原文 + 单文件 HTML；--check 查生成物漂移（需 node）
+  pact-estimate.sh / .mjs         ★ 驱动因子分层法：自动分 T1/T2/T3 套费率卡算工期成本与并发（需 node）
+  pact-parse.mjs                    PACT.md 解析层，pact-book 与 pact-estimate 共用
   pact-book.mjs                     解析 PACT.md → 数据模型 → md 投影（零依赖）
   pact-book-html.mjs                数据模型 → 自研单文件 HTML（三栏/字段搜索/依赖图/明暗主题）
 vendor/

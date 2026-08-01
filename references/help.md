@@ -138,8 +138,16 @@ S11 收尾自检门      四道机检全绿 + 末次冷读 + 知识库已重生�
 
 ```bash
 cat $S/references/effort-estimation.md      # 方法
-cp  $S/templates/estimate.md .pact/          # 产出模板
+cp  $S/templates/estimate.md .pact/          # 对外承诺用的完整格式（手写）
+cp  $S/templates/rate-card.json .pact/       # 费率卡，改成你自己的数
+
+# 算术交给工具，别手算（分层规则机器可判，谁跑都得同一个数）
+bash $S/scripts/pact-estimate.sh PACT.md               # 可持续卡
+bash $S/scripts/pact-estimate.sh PACT.md --card=peak   # 峰值卡，禁止用于承诺
 ```
+
+> 工具强制 S1 停止条件：`P5` 有一条缺 `T1` 验收就判「无法估算」退出 1，不给数字。
+> **T3 清单必须人眼复核**——工具输出每条判定理由，逐条问「这条真比一个 CRUD 难十倍吗」。
 
 三条最容易翻车的规矩：
 

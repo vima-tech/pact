@@ -218,8 +218,12 @@
 4. `T4`：可勾选的 DoD 清单。
 5. `T5`：每个里程碑给 R-ID 清单、出口条件、**明确不含什么**。
 6. **估算门**（需对外报价/排期时必做，否则 `board.md` 标「已跳过（理由）」）：
-   照 `references/effort-estimation.md` 走，产出 `.pact/estimate.md`；
-   三条线写回 `T5`、停工线写回 `T3`、工期与团队写回 `P7`。
+   照 `references/effort-estimation.md` 走。**算术交给工具，别手算**：
+   `cp templates/rate-card.json .pact/`（改成执行者实测费率）→
+   `bash scripts/pact-estimate.sh PACT.md`（自动分层、套卡、出 `.pact/estimate-calc.md`）。
+   再把三条线写回 `T5`、停工线写回 `T3`、工期与团队写回 `P7`，
+   对外承诺用手写的 `.pact/estimate.md`（完整格式：前提/假设/阻塞源/停工线）。
+   工具会强制 S1 停止条件（缺 `T1` 验收即拒绝出数）。
 
 ### 退出判定
 - [ ] `P5` 的**每一个** R-ID 在 `T1` 都有一行（跑 lint 会查这条）
