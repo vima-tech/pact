@@ -7,13 +7,19 @@ description: >
   不追问背景、不猜测意图、不遗漏约束**。
   用于新建项目开局与大需求设计。执行方式不是"参考流程"，而是 **S0–S11 十二道工序**：
   每道有进入条件、必须产出、可机检的退出条件；不适用的工序必须显式标「已跳过（理由）」，
-  禁止静默略过。三道机检兜底：`pact-status.sh` 查工序顺序、`pact-lint.sh` 查规格完备性、
+  禁止静默略过。四道机检兜底：`pact-status.sh` 查工序顺序、`pact-lint.sh` 查规格完备性、
   `pact-trace.sh` 查**代码是否真按规格实现**（规格 ↔ 代码 `@pact` 标注 ↔ 覆盖表三方交叉比对，
-  抓虚报与野生功能）；再由「零知识冷读门」验证"只读一份就能开工"。
+  抓虚报与野生功能）、`pact-book.sh --check` 查**生成的知识库是否与真源漂移**；
+  再由「零知识冷读门」验证"只读一份就能开工"。
+  交付物除单文件真源外，还自动生成知识库 `.pact/pact-book/`：**md 原文给 AI 施工**
+  （每条需求一页，聚合需求+验收+依赖+决策+契约位置）、**自研单文件 HTML 给人查阅**
+  （双击即开、零依赖、零外部请求，可直接发给甲方；三栏布局、字段感知搜索 ms:/src:/类型:、
+  ★与里程碑过滤、R-ID 悬停预览、可点击依赖图、明暗主题）；另有里程碑工作包与
+  R-ID / D-ID / 不变量 / 来源 / 依赖图谱等反查索引。不依赖 mdbook。
   内建工程纪律：R-ID 可追溯矩阵、批量审核门、多来源差异逐条裁定、存量代码八维评估、
   产物收敛落盘、结构与配置集中、交付即可被人类或 AI 接手。
   触发词：pact、PACT 文档、完备规格、新项目开局、大需求设计、写 PRD/SDD/SPEC、
-  技术方案设计、规格评审、冷读检查、需求冻结、按工序施工。
+  技术方案设计、规格评审、冷读检查、需求冻结、按工序施工、规格知识库。
 argument-hint: "[--help] [<简报文本 | 既有文档路径...>] [--new|--feature|--merge|--build|--audit] [--level=full|feature] [--review]"
 ---
 
@@ -87,10 +93,10 @@ S0 定位摄入 → S1 访谈门 → [S2 熔合门] → [S3 存量评估]
 | **S5** | 写 A 层 | 总是 | `PACT.md` `A1–A6` | 每个非平凡取舍都有 D-ID 四件套（选项/结论/理由/已否决） |
 | **S6** | 写 C 层 | 总是 | `PACT.md` `C1–C11` | 每条契约是表格或代码块；不适用者写 `N/A（理由）`；无「到时候再定」 |
 | **S7** | 写 T 层 | 总是 | `PACT.md` `T1–T5` | 每个 R-ID 在 `T1` 有可执行验收；`T3` 停工线非空；`T5` 里程碑含「明确不含」 |
-| **S8** | 完备性门 | 总是 | `.pact/cold-read.md` | ① `pact-lint.sh` exit 0 ② 物料反扫无遗漏 ③ **冷读门 PASS** |
+| **S8** | 完备性门 | 总是 | `.pact/cold-read.md`、`.pact/pact-book/` | ① `pact-lint.sh` exit 0 ② 物料反扫无遗漏 ③ **冷读门 PASS** ④ `pact-book.sh` 生成成功且 `--check` 无漂移 |
 | **S9** | 冻结 | 除 `--audit` | `PACT.md` 头部状态、`.pact/changelog.md` | 头部标 `状态: 已冻结 · <日期>`；changelog 已建 |
 | **S10** | 施工 LOOP | 除 `--audit` | 代码（每段带 `@pact R###` 标注）+ `.pact/coverage.md` | `coverage.md` 全部 R-ID `已验证`；`C3` 不变量通过；**`pact-trace.sh --require-complete` 通过** |
-| **S11** | 收尾自检门 | 除 `--audit` | 自检结果写入 `board.md` | `T4` 逐条打勾；末次冷读通过；**三道机检全绿** |
+| **S11** | 收尾自检门 | 除 `--audit` | 自检结果写入 `board.md`、`.pact/pact-book/` 已重生成 | `T4` 逐条打勾；末次冷读通过；**四道机检全绿**（含 `pact-book.sh --check`） |
 
 **条件工序（S2/S3）不适用时，必须在 `board.md` 标 `已跳过（理由）`。静默略过 = 违反协议。**
 
@@ -123,26 +129,32 @@ git status                  # ④ 有无未收尾的改动
 
 读完这四样再决定做什么。**不要重新访谈、不要重写已冻结的规格、不要重复已完成的工序。**
 
-## 协议四：三道机检（自称完成不算数）
+## 协议四：四道机检（自称完成不算数）
 
 ```bash
 SKILL_DIR="$(ls -d ./.claude/skills/pact ~/.claude/skills/pact 2>/dev/null | head -1)"
 
-bash $SKILL_DIR/scripts/pact-status.sh        # 工序：骨架 + 状态合法性 + 顺序 + 下一道
-bash $SKILL_DIR/scripts/pact-lint.sh PACT.md  # 规格：四层完备性九项检查
-bash $SKILL_DIR/scripts/pact-trace.sh         # 落地：规格 ↔ 代码 ↔ 覆盖表 三方交叉比对
+bash $SKILL_DIR/scripts/pact-status.sh          # 工序：骨架 + 状态合法性 + 顺序 + 下一道
+bash $SKILL_DIR/scripts/pact-lint.sh PACT.md    # 规格：四层完备性九项检查
+bash $SKILL_DIR/scripts/pact-trace.sh           # 落地：规格 ↔ 代码 ↔ 覆盖表 三方交叉比对
+bash $SKILL_DIR/scripts/pact-book.sh --check    # 视图：知识库 ↔ PACT.md 是否漂移
 ```
 
-三道各管一件事，缺一不可：
+四道各管一件事，缺一不可：
 
 | 脚本 | 回答的问题 | 抓什么 |
 |---|---|---|
 | `pact-status.sh` | **工序走到哪了、有没有跳步** | 跳步、静默略过、冻结状态不一致 |
 | `pact-lint.sh` | **PACT 写够了没有** | 锚点缺失、占位符、R-ID 无验收、决策无「已否决」 |
 | `pact-trace.sh` | **代码真按 PACT 做了没有** | **虚报**（覆盖表说已验证但代码里没有）、**野生功能**（代码有 R-ID 但规格里没有）、漏登记、未实现 |
+| `pact-book.sh --check` | **知识库还是不是 PACT.md 的忠实投影** | 手改生成物、改了 `PACT.md` 忘了重生成、生成物残留孤儿文件 |
 
-**在 S8、S10 每轮、S11，以及任何你打算说「完成了」的时候，这三个脚本都必须真跑并贴结果。**
+**在 S8、S10 每轮、S11，以及任何你打算说「完成了」的时候，这四个脚本都必须真跑并贴结果。**
 没跑过就宣称完成 = 违反协议。
+
+> `pact-book.sh` 还会顺带报出**结构性缺陷**，这些是 lint 看不出来的（lint 查结构，它查图的连通性）：
+> 无 `T1` 验收的需求、**未排入任何里程碑的需求**、指向不存在需求的依赖、缺「已否决」的决策。
+> 详见生成的 `.pact/pact-book/src/idx/健康度.md`。改完 `PACT.md` 记得重新 `--build`。
 
 ## 协议五：十条禁令
 
@@ -159,6 +171,9 @@ bash $SKILL_DIR/scripts/pact-trace.sh         # 落地：规格 ↔ 代码 ↔ �
 8. **禁止未跑机检就宣称完成**（协议四）。
 9. **禁止冻结后改规格却不记 `changelog.md`。** 规格漂移是最贵的债。
 10. **禁止用「大致」「应该」「后续再定」搪塞 C 层。** 契约层写不出来就回 S1 问清楚。
+11. **禁止手改 `.pact/pact-book/` 下的任何文件。** 它是 `PACT.md` 的生成物，手改必被 `--check` 抓出、
+    并在下次 `--build` 覆盖。要改内容就改 `PACT.md` 再重新生成——
+    **知识库好查是副产品，真源唯一才是目的。**
 
 ## 协议六：什么时候该停下来问人
 
@@ -208,12 +223,32 @@ bash $SKILL_DIR/scripts/pact-trace.sh         # 落地：规格 ↔ 代码 ↔ �
     changelog.md     #   S9 后：PACT 变更记录（改了什么、为什么、影响哪些 R-ID）
     coverage.md      #   S10 R-ID 覆盖审计表（R-ID → 实现位置 → 验收 → 状态）
     baseline/*.png   #   设计基准截图（有 UI 时）
+    pact-book/       # 【生成物】知识库（S8 起生成，勿手改）
+      pact-book.html # ★ 单文件知识库：双击即开，零依赖、可直接发给甲方/分包方
+      src/           #   md 原文 —— **AI 施工读这里**，HTML 只面向人
+      book.toml      #     可选：装了 mdbook 也能 `mdbook serve`（非必需）
+      src/SUMMARY.md #     mdbook 导航
+      src/{p,a,c,t}/ #     按 30 个锚点切分的章节页
+      src/r/R###.md  #   ★ 每条需求一页：需求+验收+依赖+决策+契约位置（AI 施工素材）
+      src/m/M#.md    #     里程碑工作包：该阶段全部需求 + 出口条件 + 明确不含
+      src/idx/*.md   #     反查索引：R-ID / D-ID / 不变量 / 来源 / 依赖图谱 / 健康度
 ```
 
 **分工铁律**：
 - `PACT.md` = **冻结的规格**（做什么、为什么、算完成）——**不外链到别处才看得懂**。
-- `.pact/` = **过程与执行态**（问了什么、评估了什么、做到哪了）——可变，不影响 PACT 的自足性。
+- `.pact/` = **过程与执行态 + 生成视图**（问了什么、评估了什么、做到哪了、生成了什么）——
+  可变，不影响 PACT 的自足性。**根目录只留 `PACT.md` / `CLAUDE.md` / `README.md` 三个入口文件**，
+  其余一律收进 `.pact/`——知识库虽是交付物，但它是生成的、可随时重建，放根目录会喧宾夺主。
 - `CLAUDE.md` = **惯例**（怎么写）。
+- `.pact/pact-book/` = **`PACT.md` 的生成视图**（好查、好切片）——**不是真源，一个字都不许手写**。
+  其中 `src/` 是 **AI 施工读的 md**，`pact-book.html` 是**给人看的单文件网页**（自研渲染，不依赖 mdbook）。
+
+> **为什么知识库必须是生成的、而不是手写的第二份文档**：
+> PACT 自己第 9 条禁令就是「规格漂移是最贵的债」。两份手写内容必然漂移，
+> 届时没人知道该信哪份。生成 + `--check` 门禁，让漂移在 CI 里就被抓住，而不是在验收现场。
+>
+> **冷读门永远只读 `PACT.md`**：知识库再好查，也不能替代「只读一份就能开工」这条验收标准。
+> 若某条信息只有在知识库里跳三页才拼得出来，那是 `PACT.md` 写漏了，不是知识库的功劳。
 
 ### 本 skill 自带的资源
 
@@ -235,6 +270,8 @@ bash $SKILL_DIR/scripts/pact-trace.sh         # 落地：规格 ↔ 代码 ↔ �
 | `scripts/pact-status.sh` | **工序机检**：骨架齐备 + 状态合法 + 顺序合法 + 告诉你下一道 |
 | `scripts/pact-lint.sh` | **规格机检**：四层完备性九项检查。零依赖 |
 | `scripts/pact-trace.sh` | **落地机检**：规格 ↔ 代码 `@pact` 标注 ↔ 覆盖表三方交叉比对，抓虚报与野生功能。零依赖 |
+| `scripts/pact-book.sh` | **生成知识库**（默认 `--build`）：md 原文 + **单文件 HTML**；`--check` 查漂移。底层 `pact-book.mjs` + `pact-book-html.mjs`，只需 node |
+| `vendor/marked.min.js` | 单文件 HTML 内嵌的 markdown 渲染器（MIT，40KB）。章节页搬运 `PACT.md` 正文，作者可写任意 markdown，手搓解析器必踩坑 |
 | `scripts/pact-help.sh` | 打印使用速览（`--help` 用；人类也可在终端直接跑） |
 | `scripts/token-lint.sh` | 有 UI 时：组件里禁止裸 hex/px/rgb。零依赖 |
 | `scripts/visual-diff.mjs` | 有 UI 时：截图对基准图 pixelmatch。需 `playwright pixelmatch pngjs` |
@@ -561,7 +598,7 @@ bash <SKILL_DIR>/scripts/pact-lint.sh PACT.md --level=feature   # 大需求
 4. `T4` 交付前置清单逐条打勾。
 5. **规格与实现一致性**：PACT 里的契约（表结构/接口/错误码/配置）与代码实测一致；
    不一致 → 要么改代码，要么改 PACT 并记 changelog，**不许放着**。
-6. **三道机检全绿**（协议四）：
+6. **四道机检全绿**（协议四，含 `pact-book.sh --check`）：
    ```bash
    bash <SKILL_DIR>/scripts/pact-status.sh
    bash <SKILL_DIR>/scripts/pact-lint.sh PACT.md --level=<full|feature>

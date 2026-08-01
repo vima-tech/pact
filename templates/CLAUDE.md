@@ -62,6 +62,9 @@ bash $SKILL_DIR/scripts/pact-lint.sh PACT.md
 # ③ 落地可追溯性（规格 ↔ 代码 ↔ 覆盖表）
 bash $SKILL_DIR/scripts/pact-trace.sh
 
+# ④ 知识库与真源是否漂移（改完 PACT.md 必须重新 --build）
+bash $SKILL_DIR/scripts/pact-book.sh --check
+
 # ④ 构建 / 测试
 <npm run build>
 <npm test>

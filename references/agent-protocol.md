@@ -333,7 +333,8 @@
 3. `T2` 指标达阈值。
 4. `T4` DoD 逐条打勾。
 5. 规格与实现一致性核对（表结构/接口/错误码/配置 vs 代码实测）。
-6. **三道机检**：`pact-status.sh` + `pact-lint.sh` + `pact-trace.sh --require-complete`，贴结果。
+6. **四道机检**：`pact-status.sh` + `pact-lint.sh` + `pact-trace.sh --require-complete`
+   + `pact-book.sh --check`（知识库须已按最终 `PACT.md` 重生成），贴结果。
 7. 可接手性自检：`A2` 与实际目录一致 · `.env.example` 齐备 · 根目录干净 · 无 `TODO` 占位。
 8. **末次冷读**：确认 PACT 描述的仍是**现在的系统**。
 9. 全绿 → `result:` 一行。

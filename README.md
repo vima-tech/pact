@@ -93,6 +93,10 @@ bash scripts/pact-status.sh
 `coverage.md` 里 AI 声称完成的：
 
 ```bash
+bash scripts/pact-book.sh                     # 生成知识库到 .pact/pact-book/
+#   → src/**.md        给 AI 施工（每条需求一页）
+#   → pact-book.html   给人查阅（单文件，双击即开，零依赖）
+bash scripts/pact-book.sh --check             # 查知识库与真源是否漂移
 bash scripts/pact-trace.sh                     # 施工中
 bash scripts/pact-trace.sh --require-complete  # 收尾时
 ```
@@ -188,6 +192,11 @@ scripts/
   pact-status.sh                  ★ 工序机检：骨架 + 状态 + 顺序 + 下一道（零依赖）
   pact-lint.sh                    ★ 规格机检：四层完备性九项检查（零依赖）
   pact-trace.sh                   ★ 落地机检：规格↔代码↔覆盖表三方比对，抓虚报与野生功能（零依赖）
+  pact-book.sh                    ★ 生成知识库：md 原文 + 单文件 HTML；--check 查生成物漂移（需 node）
+  pact-book.mjs                     解析 PACT.md → 数据模型 → md 投影（零依赖）
+  pact-book-html.mjs                数据模型 → 自研单文件 HTML（三栏/字段搜索/依赖图/明暗主题）
+vendor/
+  marked.min.js                     单文件 HTML 内嵌的 markdown 渲染器（MIT, 40KB）
   token-lint.sh                   有 UI 时：禁裸 hex/px/rgb（零依赖）
   visual-diff.mjs                 有 UI 时：截图 diff（需 playwright pixelmatch pngjs）
   computed-style.spec.ts          有 UI 时：computed 值 == token 值 的测试模板
@@ -233,6 +242,7 @@ bash $SKILL_DIR/scripts/pact-status.sh
 
 # 落地机检（施工开始后在你的项目里跑）
 bash $SKILL_DIR/scripts/pact-trace.sh
+bash $SKILL_DIR/scripts/pact-book.sh --check
 # → R-ID 实现进度 + 虚报/野生功能告警 + R-ID→代码位置反查表
 ```
 
