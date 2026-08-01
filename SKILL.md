@@ -145,6 +145,7 @@ bash $SKILL_DIR/scripts/pact-status.sh          # 工序：骨架 + 状态合法
 bash $SKILL_DIR/scripts/pact-lint.sh PACT.md    # 规格：四层完备性九项检查
 bash $SKILL_DIR/scripts/pact-trace.sh           # 落地：规格 ↔ 代码 ↔ 覆盖表 三方交叉比对
 bash $SKILL_DIR/scripts/pact-book.sh --check    # 视图：知识库 ↔ PACT.md 是否漂移
+bash $SKILL_DIR/scripts/star-consistency.sh PACT.md  # 强制项：P5↔T1 的 ★ 集合一致（有 ★ 时必跑）
 ```
 
 四道各管一件事，缺一不可：
@@ -155,6 +156,7 @@ bash $SKILL_DIR/scripts/pact-book.sh --check    # 视图：知识库 ↔ PACT.md
 | `pact-lint.sh` | **PACT 写够了没有** | 锚点缺失、占位符、R-ID 无验收、决策无「已否决」 |
 | `pact-trace.sh` | **代码真按 PACT 做了没有** | **虚报**（覆盖表说已验证但代码里没有）、**野生功能**（代码有 R-ID 但规格里没有）、漏登记、未实现 |
 | `pact-book.sh --check` | **知识库还是不是 PACT.md 的忠实投影** | 手改生成物、改了 `PACT.md` 忘了重生成、生成物残留孤儿文件 |
+| `star-consistency.sh` | **★ 招标强制项在 P5 与 T1 是否一致** | T1 漏标（验收缺演示）、T1 越权升级（P5 没定却标★）。★ 权威在 P5 来源列（P8 第 5 条） |
 
 **在 S8、S10 每轮、S11，以及任何你打算说「完成了」的时候，这四个脚本都必须真跑并贴结果。**
 没跑过就宣称完成 = 违反协议。
