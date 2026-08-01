@@ -50,6 +50,7 @@
 - [ ] S1 访谈门通过（`.pact/interview.md` OPEN 清零）
 - [ ] S2 熔合门通过（全部 DIFF 已裁定并落 D-ID）
 - [ ] S3 存量评估完成（八维 + P0 已排进 M0）
+- [ ] S7 估算门通过（`.pact/estimate.md`）或标「已跳过（理由）」
 - [ ] S8 ① `pact-lint.sh` exit 0
 - [ ] S8 ② 物料反扫无遗漏
 - [ ] S8 ③ 冷读门 PASS（`.pact/cold-read.md`）

@@ -13,6 +13,7 @@
 #   7 A5 每条 D-ID 四件套齐全（选项/结论/理由/已否决，且有实质内容）
 #   8 C1 / C4 契约可执行（含表格或代码块）
 #   9 [WARN] 残留尖括号占位符 <...>
+#  10 [WARN] P7 声称了工期/团队/周期，却没有 .pact/estimate.md（估算门缺席）
 #
 # 退出码：0=全过（可能有 WARN） 1=有 FAIL 2=用法错误
 set -uo pipefail
@@ -214,6 +215,25 @@ if [[ -n "$ang" ]]; then
   echo "$ang" | sed 's/^/         /'
 else
   pass "无尖括号占位"
+fi
+
+# ── 10 估算门（WARN） ─────────────────────────────────────────────────────
+# 为什么只 WARN 不 FAIL：纯内部、无排期压力的项目可以不做估算门（board.md 标已跳过即可）。
+# 但「P7 里写了工期/团队，却没有估算依据」是典型的拍脑袋数字，必须提醒——
+# 这种数字一旦进了合同就是承诺。
+say "10 估算门"
+p7="$(sed -n '/<!-- PACT:P7 -->/,/<!-- PACT:P8 -->/p' "$FILE" 2>/dev/null || true)"
+claims="$(echo "$p7" | grep -nEi '工期|周期|团队规模|人月|人天|个月.*人|上线时间' | head -5 || true)"
+estfile="$(dirname "$FILE")/.pact/estimate.md"
+if [[ -z "$claims" ]]; then
+  pass "P7 未声称工期/团队，无需估算依据"
+elif [[ -f "$estfile" ]]; then
+  pass "P7 声称了工期/团队，且 .pact/estimate.md 在"
+else
+  warn "P7 声称了工期/团队，但缺 .pact/estimate.md —— 这是拍脑袋数字，进了合同就是承诺"
+  echo "$claims" | sed 's/^/         /'
+  echo "         修法：按 $SKILL_DIR/references/effort-estimation.md 走估算门，"
+  echo "               产出模板 $SKILL_DIR/templates/estimate.md"
 fi
 
 # ── 汇总 ──────────────────────────────────────────────────────────────────

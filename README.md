@@ -67,7 +67,8 @@ bash scripts/pact-status.sh
 覆盖一致性（S10 完成 ⇒ 覆盖表无未验证项），
 并直接告诉 agent **下一道该做什么**。
 
-配套的 [`references/agent-protocol.md`](references/agent-protocol.md) 是**十二张工序卡**，
+配套的 [`references/
+  effort-estimation.md            ★ AI 辅助开发的工期与工作量评估法（S7 估算门执行）agent-protocol.md`](references/agent-protocol.md) 是**十二张工序卡**，
 每张三段：动作清单 · 退出判定 · **这道工序上 AI 最常见的偷懒模式**。例如：
 
 > **S5 常见偷懒**：理由写成「更现代、社区活跃、性能更好」——这三句对任何选型都成立，等于没写。

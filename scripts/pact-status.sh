@@ -138,6 +138,7 @@ opt() { [[ -f "$ROOT/$1" ]] || warn "缺 $1 —— $2"; }
 done_ge 1  && req ".pact/interview.md"   "S1 已完成就必须有访谈记录"
 done_ge 2  && req ".pact/source-merge.md" "S2 已完成就必须有差异裁定表"
 done_ge 3  && req ".pact/assessment.md"  "S3 已完成就必须有八维评估"
+done_ge 7  && opt ".pact/estimate.md"   "S7 写完 T 层就该过估算门（需对外报价/排期时必做；纯内部项目可在 board 标已跳过）"
 done_ge 8  && req ".pact/cold-read.md"   "S8 已完成就必须有冷读门报告"
 done_ge 9  && req ".pact/changelog.md"   "S9 冻结后的改动必须有处留痕"
 active_ge 10 && req ".pact/coverage.md"  "S10 施工必须有 R-ID 覆盖审计表"
