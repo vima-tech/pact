@@ -205,8 +205,18 @@ bash $SKILL_DIR/scripts/pact-book.sh --check    # 视图：知识库 ↔ PACT.md
 
 ```bash
 cat $SKILL_DIR/references/effort-estimation.md   # 方法
-cp  $SKILL_DIR/templates/estimate.md .pact/      # 产出模板
+cp  $SKILL_DIR/templates/estimate.md .pact/      # 产出模板（对外承诺用这份完整格式）
+
+# 算术部分交给工具，不要手算（分层规则机器可判，任何人跑一遍得同一个数）
+bash $SKILL_DIR/scripts/pact-estimate.sh PACT.md              # 可持续卡（默认）
+bash $SKILL_DIR/scripts/pact-estimate.sh PACT.md --card=peak  # 峰值卡，禁止用于承诺
 ```
+
+> **工具会强制 S1 停止条件**：`P5` 里只要有一条缺 `T1` 验收，直接判「无法估算」退出 1，
+> 不给数字。给数字比说不知道更有害。
+>
+> 费率表放 `.pact/rate-card.json`（工具自动读），改一个数字全项目重算。
+> **T3 清单必须人眼复核**——工具会输出每条的判定理由，逐条问「这条真的比一个 CRUD 难十倍吗」。
 
 **触发**：需对外报价、承诺排期、立项评估、需求变更影响评估时**必做**；
 纯内部无排期压力的项目可在 `board.md` 标 `估算门：已跳过（理由）`——静默略过 = 违反协议。
@@ -315,6 +325,8 @@ cp  $SKILL_DIR/templates/estimate.md .pact/      # 产出模板
 | `scripts/pact-trace.sh` | **落地机检**：规格 ↔ 代码 `@pact` 标注 ↔ 覆盖表三方交叉比对，抓虚报与野生功能。零依赖 |
 | `references/effort-estimation.md` | **AI 辅助开发的工期与工作量评估法**：50% 法则、降本推导、模块当量、阻塞缓冲、三条线、停工线。`S7` 估算门执行它 |
 | `templates/estimate.md` | 估算门产出模板（固定输出格式） |
+| `scripts/pact-estimate.sh` | **驱动因子分层法测算器**：从 `PACT.md` 自动分 T1/T2/T3、套费率卡算工期成本与并发天花板，输出 `.pact/estimate-calc.md`。缺 `T1` 验收即拒绝出数 |
+| `scripts/pact-parse.mjs` | PACT.md 解析层，`pact-book` 与 `pact-estimate` 共用（两份解析器必然漂移） |
 | `scripts/pact-book.sh` | **生成知识库**（默认 `--build`）：md 原文 + **单文件 HTML**；`--check` 查漂移。底层 `pact-book.mjs` + `pact-book-html.mjs`，只需 node |
 | `vendor/marked.min.js` | 单文件 HTML 内嵌的 markdown 渲染器（MIT，40KB）。章节页搬运 `PACT.md` 正文，作者可写任意 markdown，手搓解析器必踩坑 |
 | `scripts/pact-help.sh` | 打印使用速览（`--help` 用；人类也可在终端直接跑） |
