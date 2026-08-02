@@ -149,6 +149,47 @@ bash $S/scripts/pact-review.sh .pact/<slug>    # 完成度（100% 才 exit 0）
 **中断后怎么接着干**：物料没冻结说 `/pact-new 继续`，冻结了说 `/pact-run`。
 agent 会先读 `board.md` 与执行图谱判断进度，不重新访谈、不重写已冻结的规格。
 
+## 更新已安装的 pact
+
+先确认自己是哪种安装形态（看 skill 目录是不是软链）：
+
+```bash
+ls -la ~/.claude/skills/ | grep pact
+```
+
+**形态 A · 拷贝式安装**（`npx skills add` 装的，目录是普通文件夹）——更新要重新拉取：
+
+```bash
+npx skills update pact
+# 或重装：npx skills add vima-tech/pact -g
+```
+
+**形态 B · 源码软链安装**（目录是指向本仓库 clone 的软链）——更新只需拉代码，链接自动跟随：
+
+```bash
+cd <你的 pact 仓库 clone> && git pull
+```
+
+首次做软链安装（clone 仓库后把八个 skill 链进 agent 的 skills 目录）：
+
+```bash
+REPO=<你的 pact 仓库 clone 的绝对路径>
+for n in pact pact-new pact-run pact-review pact-check pact-change pact-list pact-estimate; do
+  ln -sfn "$REPO/$n" ~/.claude/skills/$n
+done
+```
+
+> 从形态 A 切到形态 B 时，先把旧拷贝目录移出 skills 目录再建链——
+> 旧拷贝里的 SKILL.md 会与新版重名，被 agent 当成同名 skill 重复发现。
+
+更新后验证（任一形态）：
+
+```bash
+S=~/.claude/skills/pact
+bash $S/scripts/pact-help.sh >/dev/null && echo ok    # 脚本可跑
+head -5 $S/../pact-new/SKILL.md                        # 命令 skill 在位
+```
+
 ## 兼容性
 
 `SKILL.md` 遵循 [agent skills](https://github.com/vercel-labs/skills) 规范，
@@ -157,7 +198,7 @@ bash 脚本零依赖；`pact-graph` / `pact-book` / `pact-estimate` 需 node。
 
 ## 更新记录
 
-见 [CHANGELOG.md](CHANGELOG.md)。升级：`npx skills update pact`
+见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## License
 
