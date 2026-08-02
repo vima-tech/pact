@@ -4,6 +4,74 @@
 >
 > 升级：`npx skills update pact`（或重新 `npx skills add vima-tech/pact -g`）
 
+## 2026-08-02 · 结构审计与一致性完善
+
+- **修 bug**：`pact-book.mjs` 把调用时传入的 PACT.md 路径字符串原样嵌进每页生成头，
+  同一份知识库用相对路径生成、用绝对路径 `--check` 会误报漂移。生成物内的真源引用
+  统一规范为文件名 `PACT.md`（书就在真源旁边；与旧版默认输出字节级兼容）。
+- **编号统一**：核心协议改用 A–F 后，pact-new/pact-run 里残留的「协议五」改为「协议 D」；
+  S10-CR 因新增第 6 步（同步图谱+重生成知识库）统一为「六步」（工序卡/模板/帮助/估算文档同步）；
+  「S8 三道门」「第四道机检」等旧计数措辞清理。
+- **完整性**：全部 8 份 SKILL.md 补创建/更新日期；README 上手示例补齐七命令；
+  help.md 变更提醒改指 `/pact-change`。
+- 审计核对项：SKILL 引用的 templates/references/scripts 全部存在；无死文件；
+  全仓无 coverage.md / 旧模式旗标 / 旧路径残留。
+
+## 2026-08-02 · 补充三命令一脚本：/pact-change /pact-list /pact-estimate + pact-migrate.sh
+
+- `/pact-change` —— S10-CR 的独立入口。变更最常发生在非施工时刻（冻结后开工前、交付后），
+  用户此时的自然动作是直接让 AI 改代码，正是规格漂移的头号入口。命令走完整六步
+  （P5 立 R-ID → T1 补验收 → 改 C 层 → changelog → 冷读门判定 → 同步图谱+重生成知识库），
+  出影响面报告；变更类型分 新增/修改/删除/推翻决策 四类各有额外动作；不写业务代码。
+- `/pact-list` + `scripts/pact-list.sh` —— 多物料总览：每份物料的规格状态/档位/
+  工序进度（board）/施工完成度（graph）/P1 一句话定义，附下一步建议。只读。
+- `/pact-estimate` —— 估算门独立入口（原来只挂在 /pact-new 的 S7）：四前提批量核对 →
+  pact-estimate.sh 分层测算 → T3 人眼复核 → 三条线只承诺交付线；变更后重估也走它。
+- `scripts/pact-migrate.sh` —— 旧版布局一键迁移（根 PACT.md + 扁平 .pact/ → .pact/<slug>/）：
+  git mv 感知、--dry-run 预览、输出旧路径引用清单（改引用与跑测试验证留给人/agent 完成，
+  遵守「查引用→移动→改引用→验证」四步纪律）；resolve 的旧布局报错现在直接指向它。
+  明确不立命令的：冷读门单跑（已在 /pact-check 内）、知识库手动重建、归档、续跑路由、
+  代码反向对账（待真实痛点出现再立）。
+
+## 2026-08-02 · 大重构：单命令多模式 → 四命令 skill 套件 + 多 pact 物料结构 + 执行图谱
+
+**命令形态**（`--new/--feature/--merge/--build/--audit` 全部废弃）：
+
+- `/pact-new` —— 创建物料包（初建项目 / 大需求 / 多文档熔合通吃），S0–S9：
+  访谈 → 写四层 → 完备门 → 冻结 → 生成知识库（HTML 给人 + md 给 AI）与执行图谱。
+- `/pact-run` —— 按物料施工（S10–S11）：图谱取活 → 实现 → 验收 → 回写状态，
+  **`pact-review.sh` exit 0（完成度 100%）之前不许停**。
+- `/pact-review` —— 完成度审查：五道机检聚合（status/lint/graph 100%/trace/book）+ 抽查，只读。
+- `/pact-check` —— 物料体检（原 `--audit`）：机检 + 物料反扫 + 零知识冷读门，出问题与遗漏清单，只读。
+- `/pact` 退化为总览 + 路由：打印速览并按现场状态建议命令，不执行工序。
+- run/review/check 未给路径时自动扫描 `.pact/`：恰一份直用；多份列出让用户选（脚本 exit 3）。
+
+**物料结构**（支持单项目多份 pact）：
+
+- `PACT.md` 从项目根移入 `.pact/<slug>/`，一个大需求一个物料目录，全部过程文件同目录扁平存放；
+  `pact-book/` 也生成在物料目录内。旧版布局（根 PACT.md + 扁平 .pact/）被脚本检测并给迁移提示。
+- R-ID / D-ID 号段全项目唯一：新物料从既有最大号 +1 起。
+- 新增 `scripts/pact-resolve.sh`：统一的物料目录解析（0 份报错 / 1 份直用 / 多份 exit 3 列候选），
+  全部机检脚本接入。
+
+**执行图谱 action-graph.json（取代 coverage.md，执行态唯一真源）**：
+
+- 三级 DAG：module（源自 A2）→ feature（挂 R-ID 簇）→ step（可执行步骤，引用 C 层锚点）；
+  deps 为执行依赖，机检禁环。
+- 仅 step 携带状态：impl（todo/doing/done/blocked，done 必须带 file:line 证据）、
+  test（todo/pass/fail/na，pass/na 必须带命令或理由）；上层状态由子节点推导。
+- 新增 `scripts/pact-graph.mjs`（+`.sh` 入口）：结构校验（层级/DAG/R-ID 全承接/证据）、
+  完成度计算、`--next` 取下一批可执行步骤、`--done-rids` 供 trace 对账、`--require-complete` 收尾门禁。
+- `pact-trace.sh` 三方比对的「声称」侧从 coverage.md 换成图谱；野生 R-ID 判定改用
+  **全部物料 P5 的并集**（多 pact 并存时不误报）。删除 `templates/coverage.md`。
+
+**聚合器**：新增 `scripts/pact-check.sh`（物料质量四道机检）与
+`scripts/pact-review.sh`（五道门全过 + 完成度 100% 才 exit 0，/pact-run 的停止判据）。
+
+**仓库结构**：改为多 skill 仓库——核心 `pact/`（协议 + 共享 scripts/templates/references/vendor）
++ `pact-new/`、`pact-run/`、`pact-review/`、`pact-check/` 四个命令 skill。
+工序卡、模板、help、README 全部随新结构与新命令重写/更新。
+
 ## 2026-08-01 · 实现 star-consistency.sh（P8 声称却缺失的门禁）
 
 PACT.md 的 P8 第 5 条白纸黑字写「CI 检查脚本 scripts/star-consistency.sh：

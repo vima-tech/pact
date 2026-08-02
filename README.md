@@ -1,8 +1,8 @@
-# PACT — 单文件完备规格 skill
+# PACT — 单文件完备规格 skill 套件
 
 **PACT = Product · Architecture · Contracts · Tests**
 
-一个 agent skill：把 PRD / SDD / SPEC / 验收标准 / 施工范围熔成**一份单文件完备规格 `PACT.md`**，
+一套 agent skills：把 PRD / SDD / SPEC / 验收标准 / 施工范围熔成**一份单文件完备规格 `PACT.md`**，
 并驱动它落地。用于**新建项目开局**与**大需求设计**。
 
 它的验收标准只有一条，且**必须被真实检验**：
@@ -10,78 +10,65 @@
 > 一个对本项目**一无所知**的人或 AI，**只读这一份文件**即可开始编码，
 > 且不需要追问背景、不需要猜测意图、不会遗漏约束。
 
-## 安装
+## 七个命令
 
-```bash
-npx skills add vima-tech/pact
-```
-
-装到全局（所有项目可用）：
-
-```bash
-npx skills add vima-tech/pact -g
-```
-
-装完在支持 skills 的 agent 里直接说 `/pact` 或「用 PACT 给这个项目写规格」即可触发。
-
-**先看用法**（不会执行任何工序，只打印一份速览）：
-
-```
-/pact --help
-```
-
-终端里也能看：`bash ~/.claude/skills/pact/scripts/pact-help.sh`
-
-## 为什么不是又一个 PRD 模板
-
-| 体裁 | 它回答 | PACT 的不同 |
+| 命令 | 干什么 | 停止条件 |
 |---|---|---|
-| `CLAUDE.md` / `AGENTS.md` | **怎么写代码**（偏好与惯例） | PACT 回答**写什么、为什么、做到什么算完成** |
-| PRD | 要什么 | PACT 必须再给出可执行的接口、表结构、状态机 |
-| SDD | 怎么设计（假设读者已知业务背景） | PACT **不做此假设**，且显式记录**决策理由**与**已否决方案** |
-| SPEC | 通常只覆盖接口 | PACT 同时承载动机、约束与验收 |
+| **`/pact-new`** | 创建 pact 物料包（新项目 / 大需求 / 多文档熔合通吃）：访谈 → 写四层 → 完备门 → 冻结 → 生成知识库 + 执行图谱 | 物料齐备且机检 + 冷读门全过 |
+| **`/pact-run`** | 按物料施工：执行图谱取活 → 实现（`@pact` 标注）→ 自动验收 → 回写状态 | **`pact-review.sh` exit 0（完成度 100%）** |
+| **`/pact-review`** | 审查实现完成度：五道机检聚合 + 抽查，出完成度与缺口清单；也是 `/pact-run` 的停止判据 | 单次，只读 |
+| **`/pact-check`** | 体检物料质量：机检 + 物料反扫 + 零知识冷读门，出问题与遗漏清单 | 单次，只读 |
+| **`/pact-change`** | 需求变更入口（S10-CR）：回 P5 立 R-ID → 补验收 → 改契约 → changelog → 同步图谱 → 判断重跑冷读门 | 六步走完 + 影响面报告 |
+| **`/pact-list`** | 项目内全部物料总览：状态 / 工序进度 / 完成度 + 下一步建议 | 单次，只读 |
+| **`/pact-estimate`** | 估算门：四前提核对 + 驱动因子分层测算 + 三条线（对外只承诺交付线） | 单次 |
 
-推论：凡是「懂行的人自然知道」的东西，PACT 里**必须写出来**。
+`/pact` 本身只做总览与路由：打印速览，按现场状态告诉你该用哪个命令。
+除 `/pact-new`、`/pact-list` 外的命令不给路径时自动扫描 `.pact/`：
+恰一份物料直接用；多份列出让你选。
+旧版布局（根 `PACT.md` + 扁平 `.pact/`）用 `pact/scripts/pact-migrate.sh . --slug=<名字>` 一键迁移。
 
-## 它不是"参考流程"，是不许跳步的工序协议
-
-给 AI agent 一份流程说明，它会挑着做。所以 PACT 把流程固化成 **S0–S11 十二道工序**，
-每道有**进入条件 / 必须产出 / 可机检的退出条件**：
+## 物料结构：一个大需求 = 一个物料包
 
 ```
-S0 定位摄入 → S1 访谈门 → [S2 熔合门] → [S3 存量评估]
-   → S4 写P → S5 写A → S6 写C → S7 写T
-   → S8 完备性门 → S9 冻结 → S10 施工LOOP → S11 收尾门
+<你的项目>/
+  CLAUDE.md                  # 怎么写代码（全项目一份）
+  .pact/
+    user-auth/               # 第一个 pact（如初建项目）
+    export-center/           # 第二个 pact（后来的大需求）——并存互不干扰
+      PACT.md                # 【真源】单文件完备规格（四层 P/A/C/T，30 锚点）
+      board.md               # 工序状态表（断点续跑第一真相源）
+      action-graph.json      # ★ AI 执行图谱：module→feature→step DAG + 每步实现/测试状态
+      interview.md source-merge.md assessment.md estimate.md   # 闸门记录
+      cold-read.md changelog.md                                # 执行态
+      pact-book/             # 【生成物】知识库（勿手改）
+        pact-book.html       #   给人：双击即开的单文件网页，零依赖，可直接发甲方
+        src/**.md            #   给 AI：每条需求一页的施工素材
 ```
 
-- **条件工序不适用时，必须显式标 `已跳过（理由）`**——静默略过 = 违反协议。
-- **工序状态落盘 `.pact/board.md`**，是断点续跑（会话中断 / 上下文压缩 / 换 agent 接手）的第一真相源。
-- **顺序由脚本机检**，不能出现"S8 完成而 S4 未开始"：
+- **人读 HTML，AI 读 md**：`pact-book.html` 三栏布局、字段感知搜索、依赖图、明暗主题；
+  `src/r/R###.md` 每条需求聚合 需求+验收+依赖+决策+契约位置，施工读一页即可。
+- **R-ID 号段全项目唯一**：新物料从既有最大号 +1 起，跨物料才能机检野生功能。
+
+## 执行图谱：AI 施工的依据（DAG）
+
+`/pact-new` 冻结时生成 `action-graph.json`：
+
+- 三级节点：**module**（功能模块，源自 `A2`）→ **feature**（功能点，挂 R-ID 簇）→
+  **step**（可执行步骤，引用 C 层契约锚点）；
+- `deps` 是跨节点执行依赖（DAG、机检禁环）；施工按「依赖已满足的下一批」取活；
+- 每个 step 携带 `impl`（todo/doing/done/blocked + `file:line` 证据）与
+  `test`（todo/pass/fail/na + 测试命令或理由）——**执行态的唯一真源**，取代旧版 coverage.md；
+- `/pact-run` 按它干活，`/pact-review` 按它算完成度，`pact-trace.sh` 拿它与代码标注对账。
 
 ```bash
-bash scripts/pact-status.sh
+bash pact/scripts/pact-graph.sh .pact/<slug>            # 进度树 + 完成度
+bash pact/scripts/pact-graph.sh .pact/<slug> --next     # 下一批可执行步骤
+bash pact/scripts/pact-graph.sh .pact/<slug> --require-complete   # 收尾门禁
 ```
 
-它查六项：骨架齐备（按进度动态要求）· 工序表完整 · 状态词合法且跳过带理由 ·
-顺序合法 · 冻结一致性（S9 完成 ⇔ 头部「已冻结」；S9 因 --build/--audit 跳过时不强检）·
-覆盖一致性（S10 完成 ⇒ 覆盖表无未验证项），
-并直接告诉 agent **下一道该做什么**。
+## 落地是机检的：代码必须能反查回规格
 
-配套的 [`references/
-  effort-estimation.md            ★ AI 辅助开发的工期与工作量评估法（S7 估算门执行）agent-protocol.md`](references/agent-protocol.md) 是**十二张工序卡**，
-每张三段：动作清单 · 退出判定 · **这道工序上 AI 最常见的偷懒模式**。例如：
-
-> **S5 常见偷懒**：理由写成「更现代、社区活跃、性能更好」——这三句对任何选型都成立，等于没写。
-> **S8 常见偷懒**：冷读 FAIL 了但觉得"问题不大"——它必须追问的每个问题都是真实的规格漏洞。
-> **S10 常见偷懒**：改宽断言让测试通过——这是停工线，命中即停，失败先查根因。
-
-还有**十条禁令**（禁止跳过工序 / 禁止在 S8 未过时写业务代码 / 禁止写没有 R-ID 的功能 /
-禁止自行裁定多来源分歧 / 禁止未跑机检就宣称完成 …），写在 `SKILL.md` 的执行协议里，
-优先级高于其余一切描述。
-
-## 落地侧同样是机检的：代码必须能反查回规格
-
-写规格严格、落地靠自觉，等于没有落地。所以每段业务代码必须带 R-ID 标注：
+每段业务代码必须带 R-ID 标注：
 
 ```js
 // @pact R001            单个
@@ -90,180 +77,83 @@ bash scripts/pact-status.sh
 <!-- @pact R021 -->      模板 / HTML
 ```
 
-然后 `pact-trace.sh` 做**三方交叉比对**——规格 `P5` 声称要做的、代码里实际标注的、
-`coverage.md` 里 AI 声称完成的：
+机检矩阵（自称完成不算数）：
 
-```bash
-bash scripts/pact-book.sh                     # 生成知识库到 .pact/pact-book/
-#   → src/**.md        给 AI 施工（每条需求一页）
-#   → pact-book.html   给人查阅（单文件，双击即开，零依赖）
-bash scripts/pact-book.sh --check             # 查知识库与真源是否漂移
-bash scripts/pact-trace.sh                     # 施工中
-bash scripts/pact-trace.sh --require-complete  # 收尾时
-```
-
-它抓四类问题，头两类直接 FAIL：
-
-| 问题 | 含义 |
-|---|---|
-| **虚报** | `coverage.md` 标了「已验证」，代码里却找不到该 R-ID —— AI 自说自话做完了 |
-| **野生功能** | 代码标了 `P5` 里不存在的 R-ID —— 写了没进规格的东西，或笔误 |
-| 漏登记 | 代码已实现，覆盖表没记 |
-| 未实现 | `P5` 有、代码无（施工中正常，`--require-complete` 下升为 FAIL） |
-
-顺带输出 **R-ID → 代码位置** 的反查表和实现进度百分比。
-这条是"严格按 PACT 落地"的底线：**规格、代码、覆盖表三者必须对得上**。
+| 脚本 | 回答的问题 | 抓什么 |
+|---|---|---|
+| `pact-status.sh` | 工序走到哪了 | 跳步、静默略过、冻结不一致 |
+| `pact-lint.sh` | PACT 写够了没有 | 锚点缺失、占位符、R-ID 无验收、决策无「已否决」 |
+| `pact-graph.mjs` | 图谱能不能施工、做到哪了 | 结构非法、DAG 成环、R-ID 无 step 承接、done 无证据 |
+| `pact-trace.sh` | 代码真按 PACT 做了没有 | **虚报**（图谱说完成、代码没有）、**野生功能**（代码有、规格没有） |
+| `pact-book.sh --check` | 知识库还是不是真源的投影 | 手改生成物、忘了重生成 |
+| `star-consistency.sh` | ★ 强制项 P5↔T1 一致吗 | 漏标、越权升级 |
+| **`pact-check.sh`** | **物料本身完备吗**（聚合器，/pact-check 入口） | 上面前几项 + 冻结态产物齐备 |
+| **`pact-review.sh`** | **全部实现了吗**（聚合器，/pact-review 入口） | 五道门全过 + 完成度 100% 才 exit 0 |
+| `pact-list.sh` | 项目里有哪些 pact、各自到哪了（/pact-list 入口） | 只读总览，不做门禁 |
+| `pact-migrate.sh` | 旧版布局一键迁移 | 移动 + 旧路径引用清单（改引用与验证留给人/agent） |
 
 ## 三个让它区别于「文档模板」的机制
 
-### 1. 完备性是机检的，不是自觉的
+1. **完备性是机检的**：30 个锚点 `<!-- PACT:xx -->` + `pact-lint.sh` 九项检查。
+2. **零知识冷读门**：另起一个全新 agent，只给 `PACT.md`，让它输出实现计划 + 必须追问的问题清单——
+   每问一个问题就是一处规格漏洞，跑到追问清单为空为止。
+3. **决策必须留「已否决方案」**：理由要能被反驳，后人看到的是路口而不只是结果。
 
-每个必备条目上方带机器可读锚点 `<!-- PACT:C4 -->`，章节编号与标题仍可自由调整。
+内建**估算门**（S7）：驱动因子分层法（T1/T2/T3 + 费率卡）、50% 法则、阻塞缓冲 ×1.5–2、
+三条线只承诺交付线——**禁止凭直觉给工期或报价数字**。
+
+## 仓库目录
+
+```
+pact/                 核心 skill：/pact 总览路由 + 共享资源
+  SKILL.md            协议：物料结构 · 机检 · 十四条禁令 · 估算门
+  references/         工序卡(agent-protocol) · 速览(help) · 写作标准 · 范例 · 估算方法
+  templates/          PACT.md 30 锚点骨架 · action-graph.json · board 等各工序模板
+  scripts/            全部机检与生成脚本（见上表）
+  vendor/             marked.min.js（单文件 HTML 内嵌渲染器）
+pact-new/SKILL.md      /pact-new  创建物料包（S0–S9）
+pact-run/SKILL.md      /pact-run  按物料施工（S10–S11，100% 才停）
+pact-review/SKILL.md   /pact-review  完成度审查（只读）
+pact-check/SKILL.md    /pact-check   物料体检（只读）
+pact-change/SKILL.md   /pact-change  需求变更入口（S10-CR）
+pact-list/SKILL.md     /pact-list    多物料总览（只读）
+pact-estimate/SKILL.md /pact-estimate  估算门独立入口
+```
+
+## 安装与上手
 
 ```bash
-bash scripts/pact-lint.sh PACT.md --level=full
-```
-
-九项检查：四层锚点齐备且非空 · 无占位符 · **每个 R-ID 都被验收清单覆盖** ·
-**每条决策都写了「已否决方案」** · 数据模型与接口是表格或 schema 而非散文 ·
-文档带创建日期 · 等。不适用的条目必须写 `N/A（理由）`——删锚点不行。
-
-### 2. 零知识冷读门
-
-lint 只能查结构。「只读这一份就能开工」靠另一道门验证：
-
-> 另起一个**全新** agent，**只给它 `PACT.md`**，不给对话历史、不给其他文档、不给代码库背景。
-> 让它输出：(a) 它理解的实现计划 (b) **它必须追问才能动工的问题清单** (c) 它发现的矛盾。
-
-它每问一个问题，就是一处规格漏洞。它答案其实在文里 → 不算漏洞，但说明**表述不可发现**，也要改。
-它的实现计划跑偏 → 说明需求表述有歧义。**跑到追问清单为空为止。**
-
-### 3. 决策必须留下「已否决方案」
-
-```markdown
-#### D001 · 导出走同步接口还是异步任务
-- **选项**：A. 同步返回文件流 / B. 异步任务加轮询
-- **结论**：采 A
-- **理由**：上限已压到一万行，实测生成约三秒；异步要引入任务表、状态轮询、过期清理三块新代码…
-- **已否决**：B——任务生命周期管理成本超过本期收益，且内网无对象存储…
-```
-
-理由必须**能被反驳**。「更现代、社区活跃、性能更好」对任何选型都成立，等于没写。
-这让后人看到**路口**，而不只是看到**结果**。
-
-## 四层
-
-| 层 | 内容 | 锚点 |
-|---|---|---|
-| **P**roduct | 背景、用户、场景、需求、非目标、约束、成功定义 | `P1–P8` |
-| **A**rchitecture | 结构、模块职责、设计原则、带理由的决策 | `A1–A6` |
-| **C**ontracts | 数据模型、接口、状态机、配置、权限、观测、prompt | `C1–C11` |
-| **T**ests | 验收清单、指标、**停工线**、交付前置、施工范围 | `T1–T5` |
-
-## 五种模式
-
-| 模式 | 场景 | 干什么 |
-|---|---|---|
-| `--new` | 空项目 / 只有一句想法 | 访谈补白（十二类）→ 从零写完整 PACT → 冻结 → 施工 |
-| `--feature` | 已有代码 + 一个大需求 | 存量八维评估 → 写特性级 PACT → 冻结 → 施工 |
-| `--merge` | 有一堆互相打架的既有文档 | 差异按矛盾/细化/缺漏/越界分类逐条裁定 → 熔成一份 |
-| `--build` | 已有冻结的 PACT | 直接进施工闭环 |
-| `--audit` | 已有 PACT | 只体检：lint + 冷读门，出报告不改实现 |
-
-## 目录
-
-```
-SKILL.md                          skill 主体：执行协议 · 5 模式 · S0–S11 十二道工序
-references/
-  help.md                         人类向使用速览（/pact --help 输出这份）
-  agent-protocol.md               ★ 十二张工序卡：动作清单 · 退出判定 · 常见偷懒模式
-  authoring-guide.md              逐节「写到什么程度算够」+ 反例
-  example-PACT.md                 通过全部机检的完整范例
-templates/
-  PACT.md                         30 锚点骨架，起手拷这个
-  board.md                        ★ 工序状态表 + 进度看板（断点续跑第一真相源）
-  interview.md                    S1 访谈门：十二类补白清单
-  source-merge.md                 S2 多来源差异裁定表
-  assessment.md                   S3 存量代码八维评估
-  cold-read.md                    S8 冷读门 prompt 与判定标准
-  coverage.md changelog.md        执行态
-  CLAUDE.md                       项目 CLAUDE.md 模板（讲清与 PACT 的分工）
-scripts/
-  pact-help.sh                    打印使用速览（--help 输出 references/help.md）
-  pact-status.sh                  ★ 工序机检：骨架 + 状态 + 顺序 + 下一道（零依赖）
-  pact-lint.sh                    ★ 规格机检：四层完备性九项检查（零依赖）
-  pact-trace.sh                   ★ 落地机检：规格↔代码↔覆盖表三方比对，抓虚报与野生功能（零依赖）
-  pact-book.sh                    ★ 生成知识库：md 原文 + 单文件 HTML；--check 查生成物漂移（需 node）
-  pact-estimate.sh / .mjs         ★ 驱动因子分层法：自动分 T1/T2/T3 套费率卡算工期成本与并发（需 node）
-  star-consistency.sh             ★ 校验 P5↔T1 的 ★ 招标强制项集合一致（P8 第 5 条要求，纯 bash）
-  pact-parse.mjs                    PACT.md 解析层，pact-book 与 pact-estimate 共用
-  pact-book.mjs                     解析 PACT.md → 数据模型 → md 投影（零依赖）
-  pact-book-html.mjs                数据模型 → 自研单文件 HTML（三栏/字段搜索/依赖图/明暗主题）
-vendor/
-  marked.min.js                     单文件 HTML 内嵌的 markdown 渲染器（MIT, 40KB）
-  token-lint.sh                   有 UI 时：禁裸 hex/px/rgb（零依赖）
-  visual-diff.mjs                 有 UI 时：截图 diff（需 playwright pixelmatch pngjs）
-  computed-style.spec.ts          有 UI 时：computed 值 == token 值 的测试模板
-```
-
-## 产物骨架
-
-```
-<project>/
-  PACT.md            # 真源：冻结的完备规格
-  CLAUDE.md          # 惯例：怎么写代码
-  .pact/
-    board.md         # ★ 工序状态表 —— 断点续跑先读这份
-    interview.md source-merge.md assessment.md      # S1/S2/S3 闸门记录
-    cold-read.md changelog.md coverage.md           # S8/S9/S10 执行态
-```
-
-`PACT.md` 自足——不靠外链、不靠对话历史、不靠「你懂的」。
-冻结后任何改动都要在 `.pact/changelog.md` 留痕：规格漂移是最贵的债。
-
-## 快速上手
-
-```bash
-npx skills add vima-tech/pact -g
+npx skills add vima-tech/pact -g     # 装到全局（七个命令 skill + 核心）
 cd your-project
-# 然后对 agent 说：用 pact 给这个项目写规格
+# 然后对 agent 说：
+#   /pact-new 做一个 <你的需求>
+#   /pact-run        （物料冻结后）
+#   /pact-review     （做完了吗）
+#   /pact-check      （规格写够了吗）
+#   /pact-change 导出要支持 Excel     （冻结后改需求）
+#   /pact-list       （项目里有哪些 pact）
+#   /pact-estimate   （多久能做完 / 报个价）
 ```
 
 手动跑一次机检看看它管什么：
 
 ```bash
-SKILL_DIR=~/.claude/skills/pact
-
-# 规格机检
-bash $SKILL_DIR/scripts/pact-lint.sh $SKILL_DIR/references/example-PACT.md --level=feature
-# → PASS
-bash $SKILL_DIR/scripts/pact-lint.sh $SKILL_DIR/templates/PACT.md --level=full
-# → FAIL（空模板本来就不是合格规格，这是预期行为）
-
-# 工序机检（在你的项目里跑）
-bash $SKILL_DIR/scripts/pact-status.sh
-# → 列出 S0–S11 进度，并告诉你下一道该做什么
-
-# 落地机检（施工开始后在你的项目里跑）
-bash $SKILL_DIR/scripts/pact-trace.sh
-bash $SKILL_DIR/scripts/pact-book.sh --check
-# → R-ID 实现进度 + 虚报/野生功能告警 + R-ID→代码位置反查表
+S=~/.claude/skills/pact
+bash $S/scripts/pact-lint.sh $S/references/example-PACT.md --level=feature   # → PASS
+bash $S/scripts/pact-lint.sh $S/templates/PACT.md --level=full               # → FAIL（空模板，预期）
+# 在你的项目里（有物料后）：
+bash $S/scripts/pact-check.sh  .pact/<slug>    # 物料质量
+bash $S/scripts/pact-review.sh .pact/<slug>    # 完成度（100% 才 exit 0）
 ```
 
-**中断后怎么接着干**——不管是换了会话、上下文被压缩，还是换个 agent 接手：
-
-```bash
-cat .pact/board.md                        # 我在第几道工序
-bash $SKILL_DIR/scripts/pact-status.sh    # 机检 + 下一道是什么
-```
-
-不需要重新访谈，不需要重写已冻结的规格。
+**中断后怎么接着干**：物料没冻结说 `/pact-new 继续`，冻结了说 `/pact-run`。
+agent 会先读 `board.md` 与执行图谱判断进度，不重新访谈、不重写已冻结的规格。
 
 ## 兼容性
 
 `SKILL.md` 遵循 [agent skills](https://github.com/vercel-labs/skills) 规范，
 可安装到 Claude Code、Cursor、Codex、Copilot 等支持 skills 的 agent。
-`pact-lint.sh` 与 `token-lint.sh` 只依赖 bash + 常见 coreutils。
+bash 脚本零依赖；`pact-graph` / `pact-book` / `pact-estimate` 需 node。
 
 ## 更新记录
 

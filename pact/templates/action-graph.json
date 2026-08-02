@@ -1,0 +1,27 @@
+{
+  "_doc": [
+    "action-graph.json — AI 执行图谱（施工执行态的唯一真源）。/pact-new 在 S9 冻结时生成，/pact-run 按它取活并回写状态。",
+    "三级节点：module（功能模块，源自 A2）→ feature（功能点，挂 R-ID 簇）→ step（可执行步骤，唯一携带 impl/test 状态）。",
+    "deps = 跨节点执行依赖（DAG，禁环）；step 可依赖任何节点，依赖为 feature/module 时表示「其下全部 step 完成」。",
+    "impl.status: todo|doing|done|blocked（done 必须带 evidence，file:line）。",
+    "test.status: todo|pass|fail|na（pass 带测试命令/名称；na 带不适用理由）。",
+    "P5 的每个 R-ID 必须被至少一个 step 的 rids 承接，否则 pact-graph.mjs 判图谱不完备。",
+    "机检：node pact-graph.mjs <物料目录>（--next 取下一批可执行步骤；--require-complete 收尾用）。"
+  ],
+  "version": 1,
+  "pact": "<slug>",
+  "created": "<YYYY-MM-DD>",
+  "updated": "<YYYY-MM-DD>",
+  "nodes": [
+    { "id": "M-auth", "kind": "module", "title": "认证模块（A2）" },
+    { "id": "F-login", "kind": "feature", "parent": "M-auth", "title": "密码登录", "rids": ["R001", "R002"] },
+    { "id": "S-user-table", "kind": "step", "parent": "F-login", "title": "建 users 表与迁移（C1#users）",
+      "rids": ["R001"], "deps": [],
+      "impl": { "status": "todo", "evidence": [] },
+      "test": { "status": "todo", "evidence": [] } },
+    { "id": "S-login-api", "kind": "step", "parent": "F-login", "title": "实现 POST /login（C4#login，含错误码 C6）",
+      "rids": ["R001", "R002"], "deps": ["S-user-table"],
+      "impl": { "status": "todo", "evidence": [] },
+      "test": { "status": "todo", "evidence": [] } }
+  ]
+}
