@@ -5,6 +5,9 @@
     "deps = 跨节点执行依赖（DAG，禁环）；step 可依赖任何节点，依赖为 feature/module 时表示「其下全部 step 完成」。",
     "impl.status: todo|doing|done|blocked（done 必须带 evidence，file:line）。",
     "test.status: todo|pass|fail|na（pass 带测试命令/名称；na 带不适用理由）。",
+    "pitfalls（可选，字符串数组）: 这一步的已知坑。写「会踩什么 + 为什么」，别写「要小心」。",
+    "  用途：把踩坑记忆从人脑挪进图谱——否则每个接手的 agent 重踩一遍。",
+    "  什么该写进去：语言/库的默认行为与规格冲突处、规格里反直觉的约束、上一轮真踩过的坑。",
     "P5 的每个 R-ID 必须被至少一个 step 的 rids 承接，否则 pact-graph.mjs 判图谱不完备。",
     "机检：node pact-graph.mjs <物料目录>（--next 取下一批可执行步骤；--require-complete 收尾用）。"
   ],
@@ -21,6 +24,10 @@
       "test": { "status": "todo", "evidence": [] } },
     { "id": "S-login-api", "kind": "step", "parent": "F-login", "title": "实现 POST /login（C4#login，含错误码 C6）",
       "rids": ["R001", "R002"], "deps": ["S-user-table"],
+      "pitfalls": [
+        "越权按 C8 返回空集而不是 403——框架默认的 403 会泄露资源存在性",
+        "口令比对必须常数时间，直接 == 会有时序侧信道"
+      ],
       "impl": { "status": "todo", "evidence": [] },
       "test": { "status": "todo", "evidence": [] } }
   ]

@@ -2,8 +2,13 @@
 # pact-lint.sh — PACT.md 完备性机检
 #
 #   用法: bash pact-lint.sh [PACT.md] [--level=full|feature] [--quiet]
+#         bash pact-lint.sh --self-test        # 检查器自检（变异回归）
 #
 #   未给路径时自动扫描 ./.pact/*/PACT.md（恰一份 → 用它；多份 → 列出候选退出 3）。
+#
+#   --self-test：拿 references/example-PACT.md 当基准，逐条注入违规，
+#   断言**对应那一项**必须报 FAIL（"因为别的原因拒绝"不算通过）。
+#   一个悄悄失效的检查器比没有检查器更危险——它给的是虚假的绿。CI 应先跑自检再跑真检。
 #
 # 检查九项：
 #   1 文件头有 创建日期(YYYY-MM-DD)
@@ -25,16 +30,68 @@ SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 source "$SKILL_DIR/scripts/pact-resolve.sh"
 
-FILE=""; LEVEL="full"; QUIET=0
+FILE=""; LEVEL="full"; QUIET=0; SELFTEST=0
 for a in "$@"; do
   case "$a" in
     --level=*) LEVEL="${a#--level=}" ;;
     --quiet)   QUIET=1 ;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+    --self-test) SELFTEST=1 ;;
+    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
     -*) echo "未知参数: $a" >&2; exit 2 ;;
     *)  FILE="$a" ;;
   esac
 done
+
+# ── 自检变异（--self-test）────────────────────────────────────────────────────
+# 为什么需要：一个悄悄失效的检查器比没有检查器更危险——它给的是虚假的绿。
+# 做法：拿通过全部检查的 example-PACT.md 当基准，逐条注入违规，断言对应检查必须报 FAIL。
+# 任一变异没被抓到 → 说明该检查已失效，自检退出 1。
+if [[ $SELFTEST -eq 1 ]]; then
+  BASE="$SKILL_DIR/references/example-PACT.md"
+  [[ -f "$BASE" ]] || { echo "[FAIL] 自检基准缺失: $BASE" >&2; exit 1; }
+  STD="$(mktemp -d)"; trap 'rm -rf "$STD"' EXIT
+  ST_FAIL=0
+  echo "══ pact-lint 自检变异 ══"
+  echo
+
+  # 基准必须绿：基准都红了，后面的变异断言没有意义
+  if bash "$0" "$BASE" --level=feature --quiet >/dev/null 2>&1; then
+    echo "  [OK]   基准 example-PACT.md 通过"
+  else
+    echo "  [FAIL] 基准 example-PACT.md 未通过——先修基准再谈自检"; ST_FAIL=1
+  fi
+
+  # mutate <名称> <期望命中的检查号> <sed 表达式…>
+  mutate() {
+    local name="$1" want="$2"; shift 2
+    local f="$STD/m.md"; cp "$BASE" "$f"
+    local e; for e in "$@"; do sed -i "$e" "$f"; done
+    local out; out="$(bash "$0" "$f" --level=feature 2>&1)"; local rc=$?
+    # 断言两件事：① 确实被拒 ② 是**这一项**报的 FAIL
+    #（"因为别的原因拒绝"不算通过——否则检查项失效时会被其他项的 FAIL 掩盖）
+    if [[ $rc -eq 0 ]]; then
+      echo "  [FAIL] 变异「$name」未被抓到（检查「$want」已失效）"; ST_FAIL=1
+    elif ! awk -v w="$want" '$0==w{f=1;next} /^[0-9]+ /{f=0} f&&/\[FAIL\]/{hit=1} END{exit !hit}' <<<"$out"; then
+      echo "  [FAIL] 变异「$name」被拒了，但不是检查「$want」报的（错误的理由拒绝）"; ST_FAIL=1
+    else
+      echo "  [OK]   变异「$name」→ 检查「$want」正确报 FAIL"
+    fi
+  }
+
+  mutate "删掉创建日期"       "1 文档日期"                '/创建日期/d'
+  mutate "抹掉 Contracts 一层" "2 四层映射"               '/Contracts/d'
+  mutate "删掉一个锚点"       "3 锚点存在性"              's/<!-- PACT:T3 -->//'
+  mutate "植入占位符 TBD"     "5 占位符残留"              's/^## P6 · 非目标.*$/&\n\nTBD/'
+  mutate "R-ID 失去验收"      "6 R-ID 验收覆盖 (P5 → T1)" '/<!-- PACT:T1 -->/,/<!-- PACT:T2 -->/ s/^| R00/| X00/'
+  mutate "决策删掉「已否决」" "7 决策记录四件套 (A5)"     's/^- \*\*已否决\*\*.*$//'
+
+  echo
+  if [[ $ST_FAIL -eq 0 ]]; then
+    echo "══ 自检结果: PASS（全部变异均被正确检查项抓到）══"; exit 0
+  else
+    echo "══ 自检结果: FAIL —— 有检查项已失效，绿色不可信 ══"; exit 1
+  fi
+fi
 [[ "$LEVEL" == "full" || "$LEVEL" == "feature" ]] || { echo "--level 只能是 full 或 feature" >&2; exit 2; }
 if [[ -z "$FILE" ]]; then
   DIR="$(resolve_pact_dir "")" || exit $?

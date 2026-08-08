@@ -1,0 +1,41 @@
+# source-of-truth.yaml — 权威源清单与哈希锁
+#
+# 拷到物料目录后由 /pact-new 在 S9 冻结时填实。作用有二：
+#   ① 冻结后任何权威文件被改动，pact-check.sh 立刻抓到（防止"悄悄改了规格"）
+#   ② excluded_from_agent_context 明确告诉 AI 哪些目录不要读——负向上下文控制
+#
+# 生成/刷新哈希：
+#   cd <物料目录> && sha256sum PACT.md action-graph.json ...
+# 校验：
+#   bash <SKILL_DIR>/scripts/pact-check.sh <物料目录>
+
+version: '1'
+pact: '<slug>'
+frozen_at: '<YYYY-MM-DD>'
+
+# ── 不得进入 AI 上下文的路径 ────────────────────────────────────────────────
+# 为什么需要这一段：物料目录里的 docs/ 是**历史输入**（已被熔合进 PACT.md），
+# 归档与过程资产含已废弃术语。AI 读了它们会按过时口径实现，且很难事后发现。
+# 写在这里 = 一条可执行的"别读这些"，比在 SKILL.md 里叮嘱有效。
+excluded_from_agent_context:
+  - docs/           # 既有输入物料：已熔合进 PACT.md，不得再作为实现依据
+  - baseline/       # 设计基准截图：给视觉门禁比对用，不是规格
+  - pact-book/      # 生成物：读它等于读 PACT.md 的副本，白费上下文
+  - '*_归档.md'
+
+# ── 权威文件（改动即失锁）────────────────────────────────────────────────────
+authoritative_files:
+  - path: PACT.md
+    sha256: '<64 位十六进制>'
+    role: 单文件完备规格（写什么/为什么/算完成）
+  - path: action-graph.json
+    sha256: '<...>'
+    role: 施工执行态唯一真源
+    mutable: true          # 施工期持续回写，哈希仅记录冻结时基线，不参与漂移判定
+
+# ── 输入物料（熔合来源，只读留档）──────────────────────────────────────────
+# 记录它们是为了可追溯"这条 R-ID 从哪来的"，不是为了让 AI 去读。
+input_materials:
+  - path: docs/<原始 PRD>.md
+    sha256: '<...>'
+    merged_at: '<YYYY-MM-DD>'

@@ -268,9 +268,12 @@
 5. **跑到 PASS 为止。**
 
 ### 退出判定
+- [ ] `pact-lint.sh --self-test` 通过（**先证明检查器没坏，再信它的绿**）
 - [ ] `pact-lint.sh` exit code = 0（真跑了，贴了结果）
 - [ ] 反扫结论已写，未覆盖项已补
 - [ ] 冷读门 PASS，且报告已落盘 `<物料目录>/cold-read.md`
+- [ ] 未决问题已进 `open-questions.md`（每条带「卡住谁」与「临时策略」），
+      其中判为「阻塞」的已 `AskUserQuestion` 问过
 
 ### 常见偷懒模式
 - ❌ **不跑冷读门直接冻结**——这是 PACT 的**定义性检验**，跳过它 PACT 就退化成普通 SDD。
@@ -291,14 +294,25 @@
      初始 `impl`/`test` 全 `todo`；
    - `deps` ← 按 `T5` 里程碑顺序 + 真实技术依赖连边（M0 在最前），构成 DAG；
    - **`P5` 每个 R-ID 必须被至少一个 step 承接**。
+   - **已知坑写进 step 的 `pitfalls[]`**：语言/库默认行为与规格冲突处、规格里反直觉的约束、
+     上一轮真踩过的坑。`--next` 取活时会一并带出——否则每个接手的 agent 重踩一遍。
 4. 机检：`bash <SKILL_DIR>/scripts/pact-graph.sh <物料目录>` 必须 PASS。
-5. `board.md` 记「S8 门全过，已冻结，图谱已生成」。
+5. **生成 `00_START_HERE.md`**（拷 `<SKILL_DIR>/templates/00_START_HERE.md` 填实）：
+   三十秒理解 / 先读哪份 / 权威源优先级 / 红线（摘 `A4`+`T3`）/ 唯一验收命令 / 按角色路由 / 当前状态。
+   **它是物料目录的入口**——现实中人和别的 agent 会直接打开目录，而不是从 `/pact-run` 进来。
+6. **建 `source-of-truth.yaml`**：锁 `PACT.md` 的 SHA-256，并写明 `excluded_from_agent_context`
+   （`docs/` 既有输入已熔合、`pact-book/` 是副本、`baseline/` 不是规格——读它们只会污染上下文）。
+7. `board.md` 记「S8 门全过，已冻结，图谱已生成」。
+   **大型多子系统项目**：若采用分级冻结，在 `board.md` 的冻结门计分表里签署本次通过的门，
+   并确认「低门未过不进高门」成立。
 
 ### 退出判定
 - [ ] 头部状态已改（`pact-status.sh` 会核对）
 - [ ] changelog 已建
 - [ ] `action-graph.json` 已生成且 `pact-graph.sh` 结构校验 PASS
-- [ ] board 已记录
+- [ ] `00_START_HERE.md` 已生成并填实（不是模板占位）
+- [ ] `source-of-truth.yaml` 已建且哈希已填
+- [ ] board 已记录（含冻结门计分表，若适用）
 
 ### 常见偷懒模式
 - ❌ **冻结后改规格不记 changelog**——规格漂移是最贵的债。

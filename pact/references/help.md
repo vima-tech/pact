@@ -47,14 +47,18 @@ CLAUDE.md                ← 怎么写代码的惯例（项目根，全项目一
 .pact/
   user-auth/             ← 第一个 pact（比如初建项目）
   export-center/         ← 第二个 pact（后来加的大需求）
+    00_START_HERE.md     ← 入口：先读哪份、冲突听谁的、按角色从哪动手（第一次打开就看它）
     PACT.md              ← 唯一要读的规格：需求(R-ID)、契约、决策、验收全在里面
-    board.md             ← 工序状态表，看进度就看这个
+    board.md             ← 工序状态表 + 冻结门计分，看进度就看这个
+    open-questions.md    ← 待确认台账：问题 / 卡住谁 / 临时策略（还没定的都在这）
     action-graph.json    ← AI 执行图谱：模块→功能点→步骤 DAG + 每步实现/测试状态
+    source-of-truth.yaml ← 权威源哈希锁 + 哪些目录不许 AI 读
     interview.md         ← 访谈记录       source-merge.md ← 差异裁定
     assessment.md        ← 存量评估       cold-read.md    ← 冷读门报告
     changelog.md         ← 冻结后的变更记录
-    pact-book/           ← 生成的知识库（勿手改）
-      pact-book.html     ←   给人：双击即开的单文件网页，可直接发甲方
+    figures/             ← 图源：流程图/结构图的 SVG（AI 绘制，与真源图块 hash 对账）
+    pact-book/           ← 生成物（勿手改）
+      pact-book.html     ←   给人：正式交付规格书（整合 PRD/SDD/SPEC），双击即开、可打印成册、可直接发甲方
       src/**.md          ←   给 AI：每条需求一页的施工素材
 ```
 

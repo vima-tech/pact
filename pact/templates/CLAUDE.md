@@ -22,12 +22,15 @@
 
 | 路径（物料目录内） | 放什么 |
 |---|---|
+| `00_START_HERE.md` | **入口**：先读哪份、冲突听谁的、按角色从哪动手 |
 | `PACT.md` | 单文件完备规格（四层 P/A/C/T），真源 |
-| `board.md` | 进度看板：当前工序、阻塞 |
+| `board.md` | 进度看板：当前工序、冻结门计分、阻塞 |
+| `open-questions.md` | 待确认台账：问题 / 卡住谁 / 临时策略。**没写的不要自行假设后固化进代码** |
 | `action-graph.json` | AI 执行图谱：模块→功能点→步骤 DAG + 每步实现/测试状态 |
 | `changelog.md` | PACT 冻结后的变更记录 |
 | `cold-read.md` | 零知识冷读门历次报告 |
-| `pact-book/` | 生成物：`pact-book.html` 给人查阅，`src/**.md` 给 AI 施工（勿手改） |
+| `figures/` | 图源：流程图/结构图的 SVG（agent 绘制，hash 锁定到真源图块） |
+| `pact-book/` | 生成物：`pact-book.html` 正式交付规格书（发甲方/打印用），`src/**.md` 给 AI 施工（勿手改） |
 
 业务代码落位规则见 `PACT.md` 的 `A2`。
 

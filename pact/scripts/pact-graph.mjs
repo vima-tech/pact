@@ -6,6 +6,8 @@
 //
 //   默认      校验 + 打印按 模块→功能点→步骤 汇总的进度树与完成度
 //   --next    只列出「当前可执行」的步骤（依赖已全部完成、自身未完成）—— /pact-run 取活用
+//             输出 TSV: id<TAB>rids<TAB>impl.status<TAB>title；步骤若有 pitfalls，
+//             逐条以 "#<TAB>⚠ …" 注释行跟随（TSV 消费方跳过 # 开头行）
 //   --done-rids       只打印「已完成」的 R-ID 集合（该 R-ID 的全部步骤都完成）—— pact-trace 用
 //   --require-complete 完成度不足 100% 时 FAIL —— /pact-review 与收尾用
 //
@@ -151,8 +153,12 @@ const blocked = steps.filter(s => s.impl.status === 'blocked')
 // ── 输出 ────────────────────────────────────────────────────────────────────
 if (MODE === 'done-rids') { for (const r of doneRids) console.log(r); process.exit(0) }
 if (MODE === 'next') {
-  for (const s of nextSteps)
+  for (const s of nextSteps) {
     console.log(`${s.id}\t${(s.rids || []).join(',') || '-'}\t${s.impl.status}\t${s.title}`)
+    // 已知坑随取活一并带出：否则每个接手的 agent 重踩一遍。
+    // 以 # 开头，TSV 消费方按惯例跳过注释行即可。
+    for (const p of s.pitfalls || []) console.log(`#\t⚠ ${p}`)
+  }
   process.exit(0)
 }
 if (JSON_OUT) {

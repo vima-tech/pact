@@ -35,17 +35,25 @@
   .pact/
     user-auth/               # 第一个 pact（如初建项目）
     export-center/           # 第二个 pact（后来的大需求）——并存互不干扰
+      00_START_HERE.md       # ★ 物料目录入口：先读哪份 / 冲突听谁的 / 按角色从哪动手
       PACT.md                # 【真源】单文件完备规格（四层 P/A/C/T，30 锚点）
-      board.md               # 工序状态表（断点续跑第一真相源）
-      action-graph.json      # ★ AI 执行图谱：module→feature→step DAG + 每步实现/测试状态
+      board.md               # 工序状态表 + 冻结门计分（断点续跑第一真相源）
+      open-questions.md      # ★ 待确认台账：问题 / 卡住谁 / 临时策略
+      action-graph.json      # ★ AI 执行图谱：module→feature→step DAG + 每步实现/测试状态（step 可带 pitfalls 已知坑）
+      source-of-truth.yaml   # 权威源哈希锁 + excluded_from_agent_context（哪些目录不许读）
       interview.md source-merge.md assessment.md estimate.md   # 闸门记录
       cold-read.md changelog.md                                # 执行态
-      pact-book/             # 【生成物】知识库（勿手改）
-        pact-book.html       #   给人：双击即开的单文件网页，零依赖，可直接发甲方
+      figures/               # 图源：流程图/结构图的 SVG（agent 绘制，hash 锁定到真源图块）
+      pact-book/             # 【生成物】（勿手改）
+        pact-book.html       #   给人：正式交付规格书，双击即开、零依赖、可打印，直接发甲方
         src/**.md            #   给 AI：每条需求一页的施工素材
 ```
 
-- **人读 HTML，AI 读 md**：`pact-book.html` 三栏布局、字段感知搜索、依赖图、明暗主题；
+- **人读 HTML，AI 读 md**：`pact-book.html` 是**可正式对外交付的网页版规格书**——hero 封面、
+  目录卡片、四大部分（产品需求↔PRD、系统设计↔SDD、数据与接口规格↔SPEC、验收与交付）+ R-ID 需求索引附录；
+  网页优先：sticky 顶栏与阅读进度、粘性表头、R-ID 悬停预览、明暗主题；
+  真源里的**流程图/结构图由 agent 绘制成 SVG** 内嵌（`figures/`，hash 锁定，图块变了没重绘会被 `--check` 抓漂移）；
+  禁用 JS 也完整可读，Ctrl+P 仍可打印成册；
   `src/r/R###.md` 每条需求聚合 需求+验收+依赖+决策+契约位置，施工读一页即可。
 - **R-ID 号段全项目唯一**：新物料从既有最大号 +1 起，跨物料才能机检野生功能。
 
@@ -110,7 +118,7 @@ pact/                 核心 skill：/pact 总览路由 + 共享资源
   references/         工序卡(agent-protocol) · 速览(help) · 写作标准 · 范例 · 估算方法
   templates/          PACT.md 30 锚点骨架 · action-graph.json · board 等各工序模板
   scripts/            全部机检与生成脚本（见上表）
-  vendor/             marked.min.js（单文件 HTML 内嵌渲染器）
+  vendor/             marked.min.js（构建期 markdown 渲染器，产物不内嵌）
 pact-new/SKILL.md      /pact-new  创建物料包（S0–S9）
 pact-run/SKILL.md      /pact-run  按物料施工（S10–S11，100% 才停）
 pact-review/SKILL.md   /pact-review  完成度审查（只读）

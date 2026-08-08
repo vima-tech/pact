@@ -86,12 +86,16 @@ argument-hint: "[--help]"
   README.md          # 入口：一句话 + 怎么跑 + 指向 .pact/
   .pact/
     <slug>/          # ★ 一个 pact 物料包（/pact-new 产出，/pact-run 消费）
+      00_START_HERE.md   # ★ 物料目录入口：先读哪份 / 冲突听谁的 / 从哪动手（S9 生成，随进度更新）
       PACT.md            # 【真源】单文件完备规格。冻结后改动须走 changelog.md
-      board.md           # ★ 工序状态表（断点续跑第一真相源）
+      board.md           # ★ 工序状态表 + 冻结门计分（断点续跑第一真相源）
+      open-questions.md  # ★ 待确认台账：问题 / 卡住谁 / 临时策略（持续维护，区别于一次性的 interview.md）
+      source-of-truth.yaml # 权威源哈希锁 + excluded_from_agent_context（哪些目录不许读）
       interview.md source-merge.md assessment.md estimate.md   # S1/S2/S3/S7 闸门记录
       cold-read.md changelog.md                                # S8/S9 执行态
       action-graph.json  # ★ AI 执行图谱：module→feature→step DAG，每 step 带 impl/test 状态与证据
-      pact-book/         # 【生成物·勿手改】pact-book.html 给人（双击即开），src/**.md 给 AI 施工
+      figures/           # ★ 图源：真源流程图/结构图块的 SVG（agent 绘制，src-hash 锁定，--check 抓漂移）
+      pact-book/         # 【生成物·勿手改】pact-book.html 正式交付规格书（给人/甲方），src/**.md 给 AI 施工
       docs/              # 归位后的既有输入物料（若有）
       baseline/          # 设计基准截图（有 UI 时）
 ```
@@ -154,6 +158,10 @@ bash $SKILL_DIR/scripts/pact-review.sh  <物料目录>   # /pact-review：完成
 
 **S8、S10 每轮、S11，以及任何打算说「完成了」的时候，机检必须真跑并贴结果。**
 
+**检查器自身也要被检查**：`bash $SKILL_DIR/scripts/pact-lint.sh --self-test`
+——拿 `example-PACT.md` 当基准逐条注入违规，断言**对应那一项**报 FAIL（"因为别的原因拒绝"不算过）。
+一个悄悄失效的检查器比没有检查器更危险，它给的是**虚假的绿**。CI 里先跑自检再跑真检。
+
 ## 协议 D：十四条禁令
 
 1. **禁止跳过工序。** 不适用的在 `board.md` 标 `已跳过（理由）`。
@@ -213,9 +221,13 @@ S10 无法合理假设的关键歧义、命中 `T3` 停工线。方式：**批�
 | `references/authoring-guide.md` | 逐节「写到什么程度算够」+ 反例 |
 | `references/example-PACT.md` | 通过全部机检的 feature 级完整范例 |
 | `references/effort-estimation.md` | AI 辅助开发的工期与工作量评估法（S7 估算门） |
-| `templates/PACT.md` | 30 锚点骨架，起手拷这个 |
-| `templates/action-graph.json` | ★ 执行图谱骨架（节点/状态/依赖约定内嵌 `_doc`） |
-| `templates/{board,interview,source-merge,assessment,cold-read,changelog,estimate,CLAUDE}.md` | 各工序模板 |
+| `references/svg-figure-guide.md` | ★ SVG 图源绘制规范：真源图块 → figures/<id>.svg（CSS 变量着色、hash 锁定） |
+| `templates/PACT.md` | 30 锚点骨架，起手拷这个（含「权威源优先级」与 `T5` 降级策略） |
+| `templates/action-graph.json` | ★ 执行图谱骨架（节点/状态/依赖约定内嵌 `_doc`；step 可带 `pitfalls[]` 已知坑） |
+| `templates/00_START_HERE.md` | ★ 物料目录入口（S9 生成）：先读哪份 / 冲突听谁的 / 按角色从哪动手 |
+| `templates/open-questions.md` | ★ 待确认台账：问题 / 卡住谁 / 临时策略 / 升级为阻塞的判据 |
+| `templates/source-of-truth.yaml` | 权威源哈希锁 + `excluded_from_agent_context`（负向上下文控制） |
+| `templates/{board,interview,source-merge,assessment,cold-read,changelog,estimate,CLAUDE}.md` | 各工序模板（`board.md` 含**冻结门计分表**，供大型多子系统项目分级冻结） |
 | `templates/rate-card.json` | 估算费率卡（拷到物料目录改成实测值） |
 | `scripts/pact-resolve.sh` | 物料目录解析（被其他脚本 source；多物料时 exit 3 列候选） |
 | `scripts/pact-status.sh` | 工序机检（零依赖） |
@@ -232,7 +244,7 @@ S10 无法合理假设的关键歧义、命中 `T3` 停工线。方式：**批�
 | `scripts/star-consistency.sh` | ★ 招标强制项 P5↔T1 一致性（纯 bash） |
 | `scripts/pact-help.sh` | 打印使用速览 |
 | `scripts/token-lint.sh` / `visual-diff.mjs` / `computed-style.spec.ts` | 有 UI 时的三道视觉门禁 |
-| `vendor/marked.min.js` | 单文件 HTML 内嵌的 markdown 渲染器（MIT，40KB） |
+| `vendor/marked.min.js` | 构建期 markdown 渲染器（MIT，40KB；HTML 为构建期渲染的静态产物，不内嵌它） |
 
 **输出纪律（后台运行时）**：每轮开头一句「当前工序 · 要做什么」，结尾一句「结果 + 下一道」；
 关键数字用自己的话复述；阻塞时 `needs input:` 独占一行并 `AskUserQuestion` 给选项；
