@@ -69,7 +69,8 @@ CORE="$(ls -d ./.claude/skills/pact ~/.claude/skills/pact 2>/dev/null | head -1)
 4. 记 `changelog.md`（改了什么/为什么/影响哪些 R-ID）；
 5. 改到 `P1/P2/P4/P5/P6` → 重跑 S8 冷读门；推翻决策 → `A5` 新增 D-ID，旧的标 `已被取代`；
 6. **同步 `action-graph.json`**：新 R-ID 加 feature/step 承接、连 deps，跑 `pact-graph.sh` 结构 PASS；
-   再 `bash $CORE/scripts/pact-book.sh <物料目录>` 重生成知识库。
+   再 `bash $CORE/scripts/pact-book.sh <物料目录>` 重生成知识库
+   （构建报「图过期/待绘制」→ 按 `$CORE/references/svg-figure-guide.md` 重绘对应 `figures/*.svg`）。
    变更超出当前里程碑 → 排 `T5` 后续里程碑，不塞进正在做的单元；与 `P6`/`P7` 冲突 → 问用户，不自行放宽。
 
 ## 停止判定（唯一出口）

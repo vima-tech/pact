@@ -17,6 +17,7 @@
 // 退出码：0=成功（--check 时表示无漂移） 1=失败或检测到漂移 2=用法错误
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { join, dirname, relative, basename } from 'node:path'
 import { renderHTML } from './pact-book-html.mjs'
 import { parsePact } from './pact-parse.mjs'
@@ -404,53 +405,74 @@ for (const ms of milestones) {
   ].join('\n'))
 }
 
-// ── ⑧ 单文件 HTML 知识库（自研渲染层，零外部二进制）────────────────────────
+// ── ⑧ 单文件 HTML：正式对外交付的规格文档（有别于 src/ 的 AI 视图）──────────
 {
-  const title = (LINES.find(l => /^#\s+/.test(l)) || '# PACT').replace(/^#\s+/, '').trim()
-  const metaLine = LINES.slice(0, 40).filter(l => /创建日期|更新日期|状态[:：]/.test(l))
-    .map(l => l.replace(/^>\s?/, '').replace(/^\|+|\|+$/g, '').replace(/\s*\|\s*/g, ' ').trim())
-    .filter(x => x && x !== '—').join(' · ').replace(/\s{2,}/g, ' ').slice(0, 90) || REF
+  const title = plain((LINES.find(l => /^#\s+/.test(l)) || '# PACT').replace(/^#\s+/, '').trim())
 
-  // 页面集合：key 去掉 src/ 前缀与 .md 后缀，与 hash 路由一一对应
-  const pages = {}, order = []
-  for (const [pth, body] of files) {
-    if (!pth.startsWith('src/') || !pth.endsWith('.md') || pth === 'src/SUMMARY.md') continue
-    const key = pth.slice(4, -3)
-    const h1 = (body.split('\n').find(l => /^#\s+/.test(l)) || '').replace(/^#\s+/, '').trim()
-    pages[key] = { title: h1 || key, md: body, search: plain(body).slice(0, 1200) }
-    order.push(key)
+  // PACT 头部字段表（| 字段 | 值 | 两列）→ 封面元信息；遇到第一个正文标题就停
+  const headerMeta = []
+  for (const l of LINES.slice(0, 40)) {
+    if (/^##\s/.test(l) || /^<!--/.test(l)) break
+    const c = cells(l)
+    if (c && c.length === 2 && c[0] !== '字段') headerMeta.push({ k: plain(c[0]), v: plain(c[1]) })
   }
-  // 顺序：总览 → 章节 → 里程碑 → 需求 → 索引（与侧栏一致，供上/下一页用）
-  const rank = k => k === 'index' ? 0 : k.startsWith('p/') ? 1 : k.startsWith('a/') ? 2
-    : k.startsWith('c/') ? 3 : k.startsWith('t/') ? 4 : k.startsWith('m/') ? 5
-    : k.startsWith('r/') ? 6 : 7
-  order.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
 
-  const navGroups = []
-  navGroups.push({ name: '总览', open: true, items: [{ key: 'index', label: '知识库入口' }] })
-  for (const p of ['P', 'A', 'C', 'T']) {
-    const cs = chapters.filter(c => c.part === p)
-    if (cs.length) navGroups.push({ name: PART[p][1], open: p === 'P',
-      items: cs.map(c => ({ key: c.path.replace(/\.md$/, ''), label: `${c.id} · ${c.titleShort}` })) })
-  }
-  if (milestones.length) navGroups.push({ name: '里程碑工作包', open: true,
-    items: milestones.map(m => ({ key: `m/${m.id}`, label: m.name })) })
-  navGroups.push({ name: '需求单页（R-ID）', open: false,
-    items: [...reqs.values()].sort((a, b) => a.id.localeCompare(b.id))
-      .map(r => ({ key: `r/${r.id}`, rid: r.id, star: r.star, label: brief(r.desc, 30) })) })
-  navGroups.push({ name: '索引与反查', open: true,
-    items: ['R-ID索引', 'D-ID决策索引', '不变量索引', '来源索引', '依赖图谱', '健康度']
-      .map(n => ({ key: `idx/${n}`, label: n })) })
-
-  const slimReqs = [...reqs.values()].map(r => ({
+  const slimReqs = [...reqs.values()].sort((a, b) => a.id.localeCompare(b.id)).map(r => ({
     id: r.id, desc: plain(r.desc), star: !!r.star, type: plain(r.type), prio: plain(r.prio),
-    milestone: r.milestone, source: plain(r.source), deps: r.deps,
+    milestone: r.milestone,
   }))
+
+  // ── 图形化：真源里的流程图/结构图块 ↔ figures/<锚点-序号>.svg（agent 绘制的图源）──
+  // 判定：mermaid 块一律算图；无语言/text 块含 ≥2 行制图字符（框线/箭头）也算图。
+  // SVG 首行注释携带 src-hash（图块内容 sha1 前 12 位）；hash 一致才内嵌，
+  // 缺图 → 保留代码块 + 列待绘清单；hash 不一致（真源图变了没重绘）→ --check 判漂移。
+  const FIG_DIR = join(dirname(FILE), 'figures')
+  const figHash = t => createHash('sha1').update(t.trim()).digest('hex').slice(0, 12)
+  const isDiagram = (lang, body) => lang === 'mermaid' ||
+    (['', 'text', 'txt', 'ascii'].includes(lang) &&
+     body.split('\n').filter(l => /[─│┌┐└┘├┤┬┴┼═║╔╗╚╝▲▼◀▶←→↔⇄]|-->/.test(l)).length >= 2)
+  const figs = new Map()          // id -> {svg, src}   （仅新鲜可嵌入的）
+  const figTodo = [], figStale = []
+  const htmlChapters = chapters.map(c => {
+    let n = 0
+    const body = c.body.replace(/```(\w*)\n([\s\S]*?)```/g, (m0, lang, blk) => {
+      if (!isDiagram(lang, blk)) return m0
+      n++
+      const id = `${c.id}-${n}`, h = figHash(blk)
+      const svgPath = join(FIG_DIR, `${id}.svg`)
+      if (existsSync(svgPath)) {
+        const svg = readFileSync(svgPath, 'utf8')
+        const m = svg.match(/pact:src-hash=([0-9a-f]+)/)
+        if (m && m[1] === h) { figs.set(id, { svg, src: blk.trimEnd() }); return `\n@@FIG:${id}@@\n` }
+        figStale.push({ id, hash: h, chapter: c.id })
+      } else {
+        figTodo.push({ id, hash: h, chapter: `${c.id} · ${c.titleShort}` })
+      }
+      return m0
+    })
+    return { id: c.id, part: c.part, title: c.titleShort, body }
+  })
 
   put('pact-book.html', renderHTML({
-    title, meta: metaLine, pages, order, reqs: slimReqs,
-    milestones: milestones.map(m => ({ id: m.id, name: m.name })), navGroups, file: REF,
+    title, headerMeta,
+    chapters: htmlChapters,
+    reqs: slimReqs,
+    milestones: milestones.map(m => ({ id: m.id, name: m.name })),
+    counts: { decisions: decisions.length, invs: invs.length },
+    file: REF, figs,
   }))
+
+  if (figTodo.length) {
+    say(`\n── 图形化待办（${figTodo.length} 张）──`)
+    say(`  真源含流程图/结构图块，但 figures/ 下还没有对应 SVG——交付 HTML 里暂以文本块呈现。`)
+    for (const f of figTodo) say(`  [待绘制] figures/${f.id}.svg   src-hash=${f.hash}   （${f.chapter}）`)
+    say(`  绘制规范见 <SKILL_DIR>/references/svg-figure-guide.md；SVG 首行须含 <!-- pact:src-hash=<hash> -->`)
+  }
+  if (figStale.length) {
+    for (const f of figStale)
+      console.error(`  [${MODE === 'check' ? 'FAIL' : 'WARN'}] figures/${f.id}.svg 已过期：真源 ${f.chapter} 的图块变了（现 src-hash=${f.hash}）但 SVG 未重绘${MODE === 'check' ? '' : '——本次退回文本块呈现'}`)
+    if (MODE === 'check') { console.error('══ 结果: FAIL —— 图源与真源漂移 ══'); process.exit(1) }
+  }
 }
 
 // ── 落盘 / 比对 ─────────────────────────────────────────────────────────────

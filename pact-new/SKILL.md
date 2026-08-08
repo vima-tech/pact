@@ -36,9 +36,10 @@ CORE="$(ls -d ./.claude/skills/pact ~/.claude/skills/pact 2>/dev/null | head -1)
   assessment.md      # S3 存量八维评估（有实质代码时）
   estimate.md        # S7 估算门（需报价/排期时）
   cold-read.md       # S8 冷读门报告
+  figures/           # S8 图源：真源图块的 SVG 可视化（agent 绘制，hash 锁定到图块）
   changelog.md       # S9 冻结后的变更记录
   action-graph.json  # ★ AI 执行图谱：模块→功能点→步骤 DAG（S9 生成，/pact-run 的施工依据）
-  pact-book/         # 【生成物】S8 生成：pact-book.html 给人查阅（双击即开），src/**.md 给 AI 施工
+  pact-book/         # 【生成物】S8 生成：pact-book.html 正式交付规格书（整合 PRD/SDD/SPEC，可发甲方/打印），src/**.md 给 AI 施工
   docs/              # 归位后的既有输入物料（若有）
 ```
 
@@ -93,7 +94,11 @@ CORE="$(ls -d ./.claude/skills/pact ~/.claude/skills/pact 2>/dev/null | head -1)
   ```
   ① lint exit 0；② 拿全部输入物料**反扫** PACT 找遗漏；③ **零知识冷读门**——`Agent` 工具另起全新 agent
   只读 `PACT.md`（prompt 见 `$CORE/templates/cold-read.md`），追问清单为空才 PASS，跑到 PASS 为止；
-  ④ `bash $CORE/scripts/pact-book.sh <物料目录>` 生成知识库且 `--check` 无漂移。
+  ④ `bash $CORE/scripts/pact-book.sh <物料目录>` 生成知识库且 `--check` 无漂移；
+  ⑤ **图形化**：构建若输出「图形化待办」（真源里的流程图/结构图块），按
+    `$CORE/references/svg-figure-guide.md` 为每个图块绘制 `figures/<id>.svg`
+    （忠实转写、CSS 变量着色、首行 src-hash 注释），重跑 build 至清单清零——
+    交付 HTML 里这些图会以真正的 SVG 呈现，附文本源折叠对照。
 - **S9 冻结 + 生成执行图谱**：
   1. `PACT.md` 头部标 `状态: 已冻结 · <日期>`；建 `changelog.md`。
   2. **生成 `action-graph.json`**（从 `$CORE/templates/action-graph.json` 起步）：
@@ -109,5 +114,5 @@ CORE="$(ls -d ./.claude/skills/pact ~/.claude/skills/pact 2>/dev/null | head -1)
 
 `pact-check.sh <物料目录>` exit 0 · 冷读门 PASS · `pact-graph.sh` PASS · board 的 S0–S9 全部 `已完成/已跳过（理由）`。
 
-收尾时告诉用户：物料位置、`pact-book.html` 可双击查看、下一步用 `/pact-run <物料目录>` 施工、
+收尾时告诉用户：物料位置、`pact-book.html` 是可直接对外交付的规格书（双击即开/可打印）、下一步用 `/pact-run <物料目录>` 施工、
 `result:` 一行总结。**不要自作主张开始施工。**

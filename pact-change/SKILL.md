@@ -56,7 +56,8 @@ CORE="$(ls -d ./.claude/skills/pact ~/.claude/skills/pact 2>/dev/null | head -1)
    - 新/改 R-ID 在 `action-graph.json` 加 feature/step 承接、连 deps（变更超出当前里程碑 →
      排 `T5` 后续里程碑，**不塞进正在做的单元**）；
    - `bash $CORE/scripts/pact-graph.sh <物料目录>` 结构 PASS；
-   - `bash $CORE/scripts/pact-book.sh <物料目录>` 重生成知识库；
+   - `bash $CORE/scripts/pact-book.sh <物料目录>` 重生成知识库
+     （改到流程图/结构图块 → 构建会报图过期，按 `$CORE/references/svg-figure-guide.md` 重绘对应 `figures/*.svg`）；
    - `bash $CORE/scripts/pact-lint.sh <物料目录>/PACT.md` 复检。
 
 ## 第四步：影响面报告（最终消息必须包含）
